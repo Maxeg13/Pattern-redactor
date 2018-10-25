@@ -2,7 +2,20 @@
 #include <QtWidgets>
 #include "mainwindow.h"
 #include <QDebug>
+#include <QFile>
 QPoint mouse_p;
+QPushButton* save_OK_btn;
+QPushButton* open_OK_btn;
+QLineEdit* save_le;
+QLineEdit* open_le;
+QMainWindow* saveWindow;
+QMainWindow* openWindow;
+
+
+QFile* pattern_file;
+QTextStream* out;
+
+
 int vibro_rad_stat=17;
 int *vibro_rad;
 int vibro_step;
@@ -10,8 +23,8 @@ int *vibro_x;
 int *vibro_y;
 int *vibro_state;
 int **vibro_n;
-int Nx=3;
-int Ny=3;
+int Nx=5;
+int Ny=5;
 int checked_n=0;
 
 int getVibroNum(int i,int j);
@@ -52,6 +65,7 @@ MainWindow::MainWindow()
     for (int i=0;i<Ny;i++)
         vibro_y[i]=shift+vibro_step*i;
 
+
     QWidget *widget = new QWidget;
     setCentralWidget(widget);
 
@@ -82,14 +96,38 @@ MainWindow::MainWindow()
     statusBar()->showMessage(message);
 
     setWindowTitle(tr("Pattern Editor"));
-    setMinimumSize(480, 320);
-    resize(480, 320);
+    setMinimumSize(480, 450);
+    resize(480, 450);
 
     QPalette Pal(palette());
 
     Pal.setColor(QPalette::Background, Qt::white);
     //    setAutoFillBackground(true);
     setPalette(Pal);
+
+
+    save_le=new QLineEdit("untitled.ptn");
+    save_OK_btn=new QPushButton("save");
+    connect(save_OK_btn,SIGNAL(released()),this,SLOT(saveWithName()));
+    open_OK_btn=new QPushButton("open");
+    connect(open_OK_btn,SIGNAL(released()),this,SLOT(openWithName()));
+
+    auto central1 = new QWidget;
+    saveWindow=new QMainWindow(this);
+    QGridLayout *layout1 = new QGridLayout;
+    layout1->addWidget(save_le);
+    layout1->addWidget(save_OK_btn);
+    central1->setLayout(layout1);
+    saveWindow->setCentralWidget(central1);
+
+    open_le=new QLineEdit("untitled.ptn");
+    auto central2 = new QWidget;
+    openWindow=new QMainWindow(this);
+    QGridLayout *layout2 = new QGridLayout;
+    layout2->addWidget(open_le);
+    layout2->addWidget(open_OK_btn);
+    central2->setLayout(layout2);
+    openWindow->setCentralWidget(central2);
     update();
 
 
@@ -98,11 +136,11 @@ MainWindow::MainWindow()
 void MainWindow::paintEvent(QPaintEvent *event)
 {
     QPen pen;
-    pen.setColor(QColor(0,150,0));
+
 
     //    pen.setStyle();
     QPainter* painter=new QPainter(this);
-
+    painter->setRenderHint(QPainter::Antialiasing, true);
 
 
 
@@ -114,12 +152,14 @@ void MainWindow::paintEvent(QPaintEvent *event)
             if(checked_n==vibro_n[i][j])
             {
                 pen.setWidth(6);
+                pen.setColor(QColor(0,150,0));
                 vibro_rad[checked_n]=vibro_rad_stat*1.15;
             }
             else
             {
-                pen.setStyle(Qt::SolidLine);
-                pen.setWidth(1);
+                //                pen.setStyle(Qt::SolidLine);
+                pen.setColor(QColor(0,0,0));
+                pen.setWidth(2);
                 vibro_rad[checked_n]=vibro_rad_stat;
             }
             painter->setPen(pen);
@@ -129,7 +169,7 @@ void MainWindow::paintEvent(QPaintEvent *event)
                                                      QPointF(vibro_x[j],vibro_x[i])+QPointF(50,50));
             if(vibro_state[vibro_n[i][j]]!=0)
             {
-                gradient.setColorAt(1.0,QColor(150,150,100));
+                gradient.setColorAt(1.0,QColor(170,170,120));
                 gradient.setColorAt(0.0,QColor(250,250,200));
             }
             else
@@ -178,6 +218,54 @@ void MainWindow::contextMenuEvent(QContextMenuEvent *event)
 }
 #endif // QT_NO_CONTEXTMENU
 
+void MainWindow::saveAs()
+{
+    infoLabel->setText(tr("Invoked <b>File|Save</b>"));
+    saveWindow->show();
+}
+
+void MainWindow::openWithName()
+{
+    QFile inputFile(open_le->text());
+    if (inputFile.open(QIODevice::ReadOnly))
+    {
+        QTextStream in(&inputFile);
+        QString line = in.readLine();
+        int i=0;
+        while (!line.isNull()) {
+            for(int j=0;j<Nx;j++)
+                vibro_state[vibro_n[i][j]]=line.split("   ")[j].toInt();
+            line = in.readLine();
+            i++;
+        }
+    }
+    update();
+    openWindow->hide();
+}
+
+void MainWindow::saveWithName()
+{
+
+
+    pattern_file=new QFile(save_le->text());
+    if (!pattern_file->open(QIODevice::WriteOnly | QIODevice::Text))
+        return;
+
+    out=new QTextStream(pattern_file);
+    out->flush();
+    for(int i=0;i<Ny;i++)
+    {
+        for(int j=0;j<Nx;j++)
+        {
+            *out<<vibro_state[vibro_n[i][j]]<<"   ";
+        }
+        *out<<"\n";
+    }
+    pattern_file->close();
+
+    saveWindow->hide();
+}
+
 void MainWindow::newFile()
 {
     infoLabel->setText(tr("Invoked <b>File|New</b>"));
@@ -185,7 +273,8 @@ void MainWindow::newFile()
 
 void MainWindow::open()
 {
-    infoLabel->setText(tr("Invoked <b>File|Open</b>"));
+    openWindow->show();
+    //    infoLabel->setText(tr("Invoked <b>File|Open</b>"));
 }
 
 void MainWindow::save()
@@ -193,10 +282,7 @@ void MainWindow::save()
     infoLabel->setText(tr("Invoked <b>File|Save</b>"));
 }
 
-void MainWindow::saveAs()
-{
-    infoLabel->setText(tr("Invoked <b>File|Save</b>"));
-}
+
 
 void MainWindow::print()
 {
@@ -296,7 +382,8 @@ void MainWindow::createActions()
     saveAct = new QAction(tr("&Save"), this);
     saveAct->setShortcuts(QKeySequence::Save);
     saveAct->setStatusTip(tr("Save the pattern"));
-    connect(saveAct, &QAction::triggered, this, &MainWindow::save);
+    connect(saveAct, &QAction::triggered, this, &MainWindow::saveWithName);
+
 
     saveAsAct = new QAction(tr("&Save as ..."), this);
     //    saveAsAct->setShortcuts(QKeySequence::Save);

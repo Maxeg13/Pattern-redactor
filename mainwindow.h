@@ -26,6 +26,8 @@ private slots:
     void newFile();
     void open();
     void save();
+    void saveWithName();
+    void openWithName();
     void saveAs();
     void print();
     void undo();
