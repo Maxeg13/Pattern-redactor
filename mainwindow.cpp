@@ -1,10 +1,57 @@
 //http://doc.qt.io/qt-5/qtwidgets-mainwindows-menus-example.html
 #include <QtWidgets>
 #include "mainwindow.h"
+#include <QDebug>
 QPoint mouse_p;
+int vibro_rad_stat=17;
+int *vibro_rad;
+int vibro_step;
+int *vibro_x;
+int *vibro_y;
+int *vibro_state;
+int **vibro_n;
+int Nx=3;
+int Ny=3;
+int checked_n=0;
+
+int getVibroNum(int i,int j);
+
+int getVibroI(int n);
+
+int getVibroJ(int n);
+
+template<typename T>
+void memory_alloc(T** x, int s);
 
 MainWindow::MainWindow()
 {
+    memory_alloc<int>(&vibro_x,Nx);
+    memory_alloc<int>(&vibro_y,Ny);
+    memory_alloc<int>(&vibro_rad,Nx*Ny);
+    memory_alloc<int*>(&vibro_n,Ny);
+    memory_alloc<int>(&vibro_state,Nx*Ny);
+    for(int i=0;i<Ny;i++)
+    {
+        memory_alloc<int>(&vibro_n[i],Nx);
+    }
+
+    vibro_step=70;
+    int shift=80;
+    for (int j=0;j<Nx;j++)
+        for(int i=0;i<Ny;i++)
+        {
+            vibro_n[i][j]=getVibroNum(i,j);
+            vibro_rad[vibro_n[i][j]]=vibro_rad_stat;
+            vibro_state[vibro_n[i][j]]=0;
+        }
+
+
+    for (int i=0;i<Nx;i++)
+        vibro_x[i]=shift+vibro_step*i;
+
+    for (int i=0;i<Ny;i++)
+        vibro_y[i]=shift+vibro_step*i;
+
     QWidget *widget = new QWidget;
     setCentralWidget(widget);
 
@@ -22,8 +69,8 @@ MainWindow::MainWindow()
     QGridLayout *layout = new QGridLayout;
     layout->setMargin(5);
     layout->addWidget(topFiller,0,0);
-//    layout->addWidget(infoLabel,1,0);
-//    layout->setRowMinimumHeight(1,500);
+    //    layout->addWidget(infoLabel,1,0);
+    //    layout->setRowMinimumHeight(1,500);
 
     layout->addWidget(bottomFiller,2,0);
     widget->setLayout(layout);
@@ -38,25 +85,85 @@ MainWindow::MainWindow()
     setMinimumSize(480, 320);
     resize(480, 320);
 
-//    paintEvent();
+    QPalette Pal(palette());
+
+    Pal.setColor(QPalette::Background, Qt::white);
+    //    setAutoFillBackground(true);
+    setPalette(Pal);
     update();
+
 
 }
 
 void MainWindow::paintEvent(QPaintEvent *event)
 {
     QPen pen;
-    pen.setColor(QColor(0,0,0));
+    pen.setColor(QColor(0,150,0));
+
+    //    pen.setStyle();
     QPainter* painter=new QPainter(this);
-    painter->setPen(pen);
+
+
+
+
     QRect r=QRect(mouse_p,mouse_p+QPoint(100,100));
-    painter->drawRect(r);
+    for(int i=0;i<Ny;i++)
+        for(int j=0;j<Nx;j++)
+        {
+
+            if(checked_n==vibro_n[i][j])
+            {
+                pen.setWidth(6);
+                vibro_rad[checked_n]=vibro_rad_stat*1.15;
+            }
+            else
+            {
+                pen.setStyle(Qt::SolidLine);
+                pen.setWidth(1);
+                vibro_rad[checked_n]=vibro_rad_stat;
+            }
+            painter->setPen(pen);
+
+            QPainterPath path;
+            QRadialGradient gradient=QRadialGradient(QPointF(vibro_x[j],vibro_x[i]),40,
+                                                     QPointF(vibro_x[j],vibro_x[i])+QPointF(50,50));
+            if(vibro_state[vibro_n[i][j]]!=0)
+            {
+                gradient.setColorAt(1.0,QColor(150,150,100));
+                gradient.setColorAt(0.0,QColor(250,250,200));
+            }
+            else
+            {
+                gradient.setColorAt(1.0,QColor(100,100,100));
+                gradient.setColorAt(0.0,QColor(200,200,200));
+            }
+
+            path.addEllipse ( QPointF(vibro_x[j],vibro_x[i]), vibro_rad[vibro_n[i][j]], vibro_rad[vibro_n[i][j]]);
+            painter->fillPath(path,gradient);
+            painter->drawPath(path);
+        }
+
+
     delete painter;
 }
 
 void MainWindow::mousePressEvent(QMouseEvent *event)
 {
     mouse_p=event->pos();
+
+    for(int i=0;i<Ny;i++)
+        for(int j=0;j<Nx;j++)
+        {
+            float r2=vibro_rad[vibro_n[i][j]]*vibro_rad[vibro_n[i][j]];
+            /////!!!!!!!!!!!!!!
+            QPoint vibro_p=QPoint(vibro_x[j],vibro_x[i]);
+            if(QPoint::dotProduct(vibro_p-mouse_p,vibro_p-mouse_p)<r2)
+            {
+                checked_n=vibro_n[i][j];
+                vibro_state[checked_n]=!vibro_state[checked_n];
+                qDebug()<<checked_n;
+            }
+        }
     update();
 }
 
@@ -82,6 +189,11 @@ void MainWindow::open()
 }
 
 void MainWindow::save()
+{
+    infoLabel->setText(tr("Invoked <b>File|Save</b>"));
+}
+
+void MainWindow::saveAs()
 {
     infoLabel->setText(tr("Invoked <b>File|Save</b>"));
 }
@@ -160,8 +272,8 @@ void MainWindow::about()
 {
     infoLabel->setText(tr("Invoked <b>Help|About</b>"));
     QMessageBox::about(this, tr("About Menu"),
-            tr("This is a <b>Pattern Editor</b> program"
-               "\nv1.1"));
+                       tr("This is a <b>Pattern Editor</b> program"
+                          "\nv1.1"));
 }
 
 void MainWindow::aboutQt()
@@ -183,8 +295,13 @@ void MainWindow::createActions()
 
     saveAct = new QAction(tr("&Save"), this);
     saveAct->setShortcuts(QKeySequence::Save);
-    saveAct->setStatusTip(tr("Save the pattern to disk"));
+    saveAct->setStatusTip(tr("Save the pattern"));
     connect(saveAct, &QAction::triggered, this, &MainWindow::save);
+
+    saveAsAct = new QAction(tr("&Save as ..."), this);
+    //    saveAsAct->setShortcuts(QKeySequence::Save);
+    saveAsAct->setStatusTip(tr("name the pattern to save"));
+    connect(saveAsAct, &QAction::triggered, this, &MainWindow::saveAs);
 
     exitAct = new QAction(tr("E&xit"), this);
     exitAct->setShortcuts(QKeySequence::Quit);
@@ -296,9 +413,31 @@ void MainWindow::createMenus()
     fileMenu->addAction(newAct);
     fileMenu->addAction(openAct);
     fileMenu->addAction(saveAct);
+    fileMenu->addAction(saveAsAct);
     fileMenu->addSeparator();
     fileMenu->addAction(exitAct);
 
     helpMenu = menuBar()->addMenu(tr("&Help"));
     helpMenu->addAction(aboutAct);
+}
+
+int getVibroNum(int i,int j)
+{
+    return(j+i*Nx);
+}
+
+int getVibroI(int n)
+{
+    return n/Nx;
+}
+
+int getVibroJ(int n)
+{
+    return(n%Nx);
+}
+
+template<typename T>
+void memory_alloc(T** x, int s)
+{
+    *x = new T[s];
 }

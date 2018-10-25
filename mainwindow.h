@@ -26,6 +26,7 @@ private slots:
     void newFile();
     void open();
     void save();
+    void saveAs();
     void print();
     void undo();
     void redo();
@@ -54,6 +55,7 @@ private:
     QActionGroup *alignmentGroup;
     QAction *newAct;
     QAction *openAct;
+    QAction *saveAsAct;
     QAction *saveAct;
     QAction *printAct;
     QAction *exitAct;
