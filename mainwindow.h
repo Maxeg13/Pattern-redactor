@@ -23,7 +23,7 @@ protected:
 #endif // QT_NO_CONTEXTMENU
 
 private slots:
-    void stimulatorChecked();
+    void protChecked();
     void editorChecked();
     void newFile();
     void open();
@@ -64,7 +64,7 @@ private:
     QAction *saveAsAct;
     QAction *saveAct;
     QAction *printAct;
-    QAction *stimulatorAct;
+    QAction *protAct;
     QAction *editorAct;
     QAction *exitAct;
     QAction *undoAct;
