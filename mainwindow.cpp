@@ -9,12 +9,14 @@
 QPoint mouse_p;
 QPushButton* save_OK_btn;
 QPushButton* open_OK_btn;
+QPushButton* play_btn;
 QLineEdit* save_le;
 QLineEdit* open_le;
 QMainWindow* saveWindow;
 QMainWindow* openWindow;
 QLineEdit* prot_le;
 QWidget *protWidget;
+
 bool mode;//0-editor mode, 1-prot?
 
 QFile* pattern_file;
@@ -93,17 +95,28 @@ MainWindow::MainWindow()
 
     ////////
     QGridLayout *layout = new QGridLayout;
+    play_btn=new QPushButton("");
 //    layout->setMargin(5);
 //    layout->addWidget(topFiller,0,0);
 
-    QGroupBox* protGroup=new QGroupBox("protocol sequence");
-    QGridLayout* protLayout=new QGridLayout;
+    QGroupBox* protSequenceGroup=new QGroupBox("protocol sequence");
+    QGroupBox* protPanelGroup=new QGroupBox("settings");
+    QGridLayout* protPanelLayout=new QGridLayout;
+    QGridLayout* protSequenceLayout=new QGridLayout;
+
+    protSequenceGroup->setMaximumWidth(200);
 
     for(int i=0;i<prot_le_s;i++)
-        protLayout->addWidget(&prot_le[i],i+1,0);
+        protSequenceLayout->addWidget(&prot_le[i],i+1,0);
 
-    protGroup->setLayout(protLayout);
-    layout->addWidget(protGroup);
+    protPanelLayout->addWidget(play_btn);
+
+    protPanelGroup->setLayout(protPanelLayout);
+    protSequenceGroup->setLayout(protSequenceLayout);
+
+
+    layout->addWidget(protSequenceGroup,0,0);
+    layout->addWidget(protPanelGroup,0,1);
     //    layout->addWidget(infoLabel,1,0);
     //    layout->setRowMinimumHeight(1,500);
 
@@ -128,10 +141,13 @@ MainWindow::MainWindow()
 
 //popup windows
     save_le=new QLineEdit("untitled.ptn");
+
     save_OK_btn=new QPushButton("save");
     connect(save_OK_btn,SIGNAL(released()),this,SLOT(saveWithName()));
     open_OK_btn=new QPushButton("open");
     connect(open_OK_btn,SIGNAL(released()),this,SLOT(openWithName()));
+
+
 
     auto central1 = new QWidget;
     saveWindow=new QMainWindow(this);
