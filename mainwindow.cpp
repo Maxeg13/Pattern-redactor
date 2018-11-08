@@ -10,7 +10,7 @@ QLineEdit* save_le;
 QLineEdit* open_le;
 QMainWindow* saveWindow;
 QMainWindow* openWindow;
-
+bool mode;//0-ptn mode, 1-?
 
 QFile* pattern_file;
 QTextStream* out;
@@ -41,8 +41,8 @@ MainWindow::MainWindow()
     memory_alloc<int>(&vibro_x,Nx);
     memory_alloc<int>(&vibro_y,Ny);
     memory_alloc<int>(&vibro_rad,Nx*Ny);
-    memory_alloc<int*>(&vibro_n,Ny);
     memory_alloc<int>(&vibro_state,Nx*Ny);
+    memory_alloc<int*>(&vibro_n,Ny);
     for(int i=0;i<Ny;i++)
     {
         memory_alloc<int>(&vibro_n[i],Nx);
@@ -233,8 +233,9 @@ void MainWindow::openWithName()
         QString line = in.readLine();
         int i=0;
         while (!line.isNull()) {
+            QStringList s_list=line.split("   ");
             for(int j=0;j<Nx;j++)
-                vibro_state[vibro_n[i][j]]=line.split("   ")[j].toInt();
+                vibro_state[vibro_n[i][j]]=s_list[j].toInt();
             line = in.readLine();
             i++;
         }
@@ -390,6 +391,14 @@ void MainWindow::createActions()
     saveAsAct->setStatusTip(tr("name the pattern to save"));
     connect(saveAsAct, &QAction::triggered, this, &MainWindow::saveAs);
 
+    editorAct = new QAction(tr("&editor mode"), this);
+    editorAct->setCheckable(true);
+    connect( editorAct, &QAction::triggered, this,&MainWindow::editorChecked);
+
+    stimulatorAct = new QAction(tr("stimulator mode"),this);
+    stimulatorAct->setCheckable(true);
+    connect( stimulatorAct, &QAction::triggered, this,&MainWindow::stimulatorChecked);
+
     exitAct = new QAction(tr("E&xit"), this);
     exitAct->setShortcuts(QKeySequence::Quit);
     exitAct->setStatusTip(tr("Exit the application"));
@@ -494,6 +503,16 @@ void MainWindow::createActions()
     leftAlignAct->setChecked(true);
 }
 
+void MainWindow::editorChecked()
+{
+
+}
+
+void MainWindow::stimulatorChecked()
+{
+
+}
+
 void MainWindow::createMenus()
 {
     fileMenu = menuBar()->addMenu(tr("&File"));
@@ -503,6 +522,10 @@ void MainWindow::createMenus()
     fileMenu->addAction(saveAsAct);
     fileMenu->addSeparator();
     fileMenu->addAction(exitAct);
+
+    editMenu = menuBar()->addMenu(tr("&Edit"));
+    editMenu->addAction(editorAct);
+    editMenu->addAction(stimulatorAct);
 
     helpMenu = menuBar()->addMenu(tr("&Help"));
     helpMenu->addAction(aboutAct);
