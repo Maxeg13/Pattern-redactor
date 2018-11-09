@@ -15,6 +15,7 @@ class MainWindow : public QMainWindow
 
 public:
     MainWindow();
+    void setTitle();
     void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event);
 protected:
@@ -23,6 +24,8 @@ protected:
 #endif // QT_NO_CONTEXTMENU
 
 private slots:
+    void playPressed();
+    void updateProtocol();
     void protChecked();
     void editorChecked();
     void newFile();

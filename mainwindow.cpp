@@ -6,6 +6,12 @@
 #include <QDebug>
 #include <QFile>
 //#include <QList>
+
+bool playOn=0;
+QPixmap* pixmapPlay;
+QPixmap* pixmapStop;
+QString prot_name=QString("untitled.ptlc");
+QString pattern_name=QString("untitled.ptn");
 QPoint mouse_p;
 QPushButton* save_OK_btn;
 QPushButton* open_OK_btn;
@@ -19,12 +25,13 @@ QWidget *protWidget;
 
 bool mode;//0-editor mode, 1-prot?
 
+QFile* prot_file;
 QFile* pattern_file;
 QTextStream* out;
 
-
+int prot_N;
 int vibro_rad_stat=17;
-int prot_le_s=3;
+int prot_le_s=10;
 int *vibro_rad;
 int vibro_step;
 int *vibro_x;
@@ -48,8 +55,8 @@ MainWindow::MainWindow()
 {
     mode =1;
 
-    prot_le=new QLineEdit[3];
-
+    pixmapPlay= new QPixmap("C://Users//chibi//Pictures//play_round1600.png");
+    pixmapStop= new QPixmap("C://Users//chibi//Pictures//stop-512.png");
     memory_alloc<int>(&vibro_x,Nx);
     memory_alloc<int>(&vibro_y,Ny);
     memory_alloc<int>(&vibro_rad,Nx*Ny);
@@ -81,35 +88,53 @@ MainWindow::MainWindow()
     protWidget= new QWidget(this);
     setCentralWidget(protWidget);
 
-    QWidget *topFiller = new QWidget;
-    topFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+
+    QWidget *panelFiller = new QWidget;
+    panelFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     infoLabel = new QLabel(tr("<i>Choose a menu option, or right-click to "
                               "invoke a context menu</i>"));
     infoLabel->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
     infoLabel->setAlignment(Qt::AlignCenter);
 
-    QWidget *bottomFiller = new QWidget;
-    bottomFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
+    QWidget *protFiller = new QWidget;
+    protFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     ////////
     QGridLayout *layout = new QGridLayout;
     play_btn=new QPushButton("");
-//    layout->setMargin(5);
-//    layout->addWidget(topFiller,0,0);
+    connect(play_btn,SIGNAL(pressed()),this,SLOT(playPressed()));
+
+    QIcon ButtonIcon(*pixmapPlay);
+    play_btn->setIcon(ButtonIcon);
+    play_btn->setIconSize(QSize(30,30));
+    play_btn->setMaximumWidth(40);
+
+    //    layout->setMargin(5);
+    //    layout->addWidget(protFiller,0,0);
 
     QGroupBox* protSequenceGroup=new QGroupBox("protocol sequence");
     QGroupBox* protPanelGroup=new QGroupBox("settings");
     QGridLayout* protPanelLayout=new QGridLayout;
     QGridLayout* protSequenceLayout=new QGridLayout;
 
-    protSequenceGroup->setMaximumWidth(200);
+    //    protSequenceGroup->setMaximumWidth(200);
+    protPanelGroup->setMinimumWidth(200);
 
+    prot_le=new QLineEdit[prot_le_s];
     for(int i=0;i<prot_le_s;i++)
+    {
         protSequenceLayout->addWidget(&prot_le[i],i+1,0);
+        connect(&prot_le[i],SIGNAL(returnPressed()),this,SLOT(updateProtocol()));
+    }
+    prot_le[0].setText(QString("untitled.ptn"));
+    updateProtocol();
+
+    protSequenceLayout->addWidget(protFiller);
 
     protPanelLayout->addWidget(play_btn);
+    protPanelLayout->addWidget(panelFiller);
 
     protPanelGroup->setLayout(protPanelLayout);
     protSequenceGroup->setLayout(protSequenceLayout);
@@ -129,7 +154,7 @@ MainWindow::MainWindow()
     QString message = tr("A context menu is available by right-clicking");
     statusBar()->showMessage(message);
 
-    setWindowTitle(tr("Pattern Editor"));
+    //    setWindowTitle(tr("Pattern Editor"));
     setMinimumSize(480, 450);
     resize(480, 460);
 
@@ -139,7 +164,7 @@ MainWindow::MainWindow()
     //    setAutoFillBackground(true);
     setPalette(Pal);
 
-//popup windows
+    //popup windows
     save_le=new QLineEdit("untitled.ptn");
 
     save_OK_btn=new QPushButton("save");
@@ -157,7 +182,7 @@ MainWindow::MainWindow()
     central1->setLayout(layout1);
     saveWindow->setCentralWidget(central1);
 
-    open_le=new QLineEdit("untitled.ptn");
+    open_le=new QLineEdit("untitled.ptcl");
     auto central2 = new QWidget;
     openWindow=new QMainWindow(this);
     QGridLayout *layout2 = new QGridLayout;
@@ -167,6 +192,9 @@ MainWindow::MainWindow()
     openWindow->setCentralWidget(central2);
     update();
 
+    save_le->setText(prot_name);
+
+    setTitle();
 
 }
 
@@ -229,6 +257,16 @@ void MainWindow::paintEvent(QPaintEvent *event)
     delete painter;
 }
 
+void MainWindow::playPressed()
+{
+    playOn=!playOn;
+    QIcon ButtonIcon(playOn?(*pixmapStop):(*pixmapPlay));
+
+    play_btn->setIcon(ButtonIcon);
+    play_btn->setIconSize(QSize(30,30));
+    play_btn->setMaximumWidth(40);
+}
+
 void MainWindow::mousePressEvent(QMouseEvent *event)
 {
     mouse_p=event->pos();
@@ -271,53 +309,124 @@ void MainWindow::openWithName()
     QFile inputFile(open_le->text());
     if (inputFile.open(QIODevice::ReadOnly))
     {
-        QTextStream in(&inputFile);
-        QString line = in.readLine();
-        int i=0;
-        while (!line.isNull()) {
-            QStringList s_list=line.split("   ");
-            for(int j=0;j<Nx;j++)
-                vibro_state[vibro_n[i][j]]=s_list[j].toInt();
-            line = in.readLine();
-            i++;
+        if(mode==0)
+        {
+            pattern_name=open_le->text();
+            setTitle();
+            QTextStream in(&inputFile);
+            QString line = in.readLine();
+            int i=0;
+            while (!line.isNull()) {
+                QStringList s_list=line.split("   ");
+                for(int j=0;j<Nx;j++)
+                    vibro_state[vibro_n[i][j]]=s_list[j].toInt();
+                line = in.readLine();
+                i++;
+            }
+        }
+        else
+        {
+            prot_name=open_le->text();
+            setTitle();
+            QTextStream in(&inputFile);
+            QString line = in.readLine();
+            int i=0;
+            prot_N=0;
+            while(!line.isNull())
+            {
+                prot_le[i].setText(line);
+                i++;
+                prot_N++;
+                line = in.readLine();
+            }
+            for(int i=prot_N;i<prot_le_s;i++)
+                prot_le[i].setText("");
+            updateProtocol();
         }
     }
     update();
     openWindow->hide();
+
+    setTitle();
 }
 
 void MainWindow::saveWithName()
 {
-
-
-    pattern_file=new QFile(save_le->text());
-    if (!pattern_file->open(QIODevice::WriteOnly | QIODevice::Text))
-        return;
-
-    out=new QTextStream(pattern_file);
-    out->flush();
-    for(int i=0;i<Ny;i++)
+    if(mode==0)
     {
-        for(int j=0;j<Nx;j++)
+        pattern_file=new QFile(save_le->text());
+        if (!pattern_file->open(QIODevice::WriteOnly | QIODevice::Text))
+            return;
+
+        pattern_name=save_le->text();
+
+        out=new QTextStream(pattern_file);
+        out->flush();
+        for(int i=0;i<Ny;i++)
         {
-            *out<<vibro_state[vibro_n[i][j]]<<"   ";
+            for(int j=0;j<Nx;j++)
+            {
+                *out<<vibro_state[vibro_n[i][j]]<<"   ";
+            }
+            *out<<"\n";
         }
-        *out<<"\n";
+        pattern_file->close();
     }
-    pattern_file->close();
+    else
+    {
+        prot_file=new QFile(save_le->text());
+        if (!prot_file->open(QIODevice::WriteOnly | QIODevice::Text))
+            return;
+
+        prot_name=save_le->text();
+
+        out=new QTextStream(prot_file);
+        out->flush();
+        for(int i=0;i<prot_N;i++)
+        {
+            *out<<prot_le[i].text()<<"\n";
+        }
+        prot_file->close();
+    }
 
     saveWindow->hide();
+    setTitle();
+}
+
+
+
+void MainWindow::updateProtocol()
+{
+
+    for(int i=0;i<prot_le_s;i++)
+    {
+        if(prot_le[i].text().isEmpty())
+        {
+            prot_N=i;
+            break;
+        }
+    }
+    qDebug()<<prot_N;
+    for(int i=0;i<prot_le_s;i++)
+    {
+        if(i<(prot_N+1))
+            prot_le[i].setVisible(true);
+        else
+            prot_le[i].setVisible(false);
+    }
 }
 
 void MainWindow::newFile()
 {
     infoLabel->setText(tr("Invoked <b>File|New</b>"));
+
 }
 
 void MainWindow::open()
 {
     openWindow->show();
     //    infoLabel->setText(tr("Invoked <b>File|Open</b>"));
+
 }
 
 void MainWindow::save()
@@ -401,7 +510,7 @@ void MainWindow::about()
 {
     infoLabel->setText(tr("Invoked <b>Help|About</b>"));
     QMessageBox::about(this, tr("About Menu"),
-                       tr("This is a <b>Pattern Editor</b> program"
+                       tr("This is a <b>Stimulator</b> program"
                           "\nv1.1"));
 }
 
@@ -437,7 +546,7 @@ void MainWindow::createActions()
     editorAct->setCheckable(true);
     connect( editorAct, &QAction::triggered, this,&MainWindow::editorChecked);
 
-    protAct = new QAction(tr("prot mode"),this);
+    protAct = new QAction(tr("protocol mode"),this);
     protAct->setCheckable(true);
     protAct->setChecked(true);
     connect( protAct, &QAction::triggered, this,&MainWindow::protChecked);
@@ -550,31 +659,58 @@ void MainWindow::editorChecked()
 {
     if(mode==1)
     {
-    protAct->setChecked(false);
-    mode=0;
-//    for(int i=0;i<prot_le_s;i++)
-//        prot_le[i].setVisible(false);
-    protWidget->setVisible(false);
+        mode=0;
+        protAct->setChecked(false);
+        save_le->setText(pattern_name);
+        open_le->setText(pattern_name);
+
+        //    for(int i=0;i<prot_le_s;i++)
+        //        prot_le[i].setVisible(false);
+        protWidget->setVisible(false);
     }
     else
+    {
         editorAct->setChecked(true);
+        save_le->setText(prot_name);
+        open_le->setText(prot_name);
+
+    }
     update();
+    setTitle();
+
 }
 
 void MainWindow::protChecked()
 {
     if(mode==0)
     {
-    editorAct->setChecked(false);
-    mode=1;
-//    for(int i=0;i<prot_le_s;i++)
-//        prot_le[i].setVisible(true);
-    protWidget->setVisible(true);
+        mode=1;
+        editorAct->setChecked(false);
+        save_le->setText(prot_name);
+        open_le->setText(prot_name);
+        //    for(int i=0;i<prot_le_s;i++)
+        //        prot_le[i].setVisible(true);
+        protWidget->setVisible(true);
     }
     else
+    {
         protAct->setChecked(true);
+        save_le->setText(pattern_name);
+        open_le->setText(pattern_name);
+
+    }
 
     update();
+    setTitle();
+}
+
+void MainWindow::setTitle()
+{
+    qDebug()<<mode;
+    QString hm=mode?QString("protocol   "):QString("ptnEdit   ");
+    QString hm2=mode?prot_name:pattern_name;
+    setWindowTitle(QString("Stimulator->")+hm+hm2);
+    //    setWindowTitle(tr("<b>hello</b>"));
 }
 
 void MainWindow::createMenus()
@@ -615,3 +751,4 @@ void memory_alloc(T** x, int s)
 {
     *x = new T[s];
 }
+
