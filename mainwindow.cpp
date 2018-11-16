@@ -5,7 +5,12 @@
 #include "mainwindow.h"
 #include <QDebug>
 #include <QFile>
+#include "serial.h"
 //#include <QList>
+
+
+
+
 
 bool playOn=0;
 QPixmap* pixmapPlay;
@@ -18,10 +23,13 @@ QPushButton* open_OK_btn;
 QPushButton* play_btn;
 QLineEdit* save_le;
 QLineEdit* open_le;
+QLineEdit* serial_le;
 QMainWindow* saveWindow;
 QMainWindow* openWindow;
 QLineEdit* prot_le;
 QWidget *protWidget;
+Serial hSerial;
+QString qstr;
 
 bool mode;//0-editor mode, 1-prot?
 
@@ -102,6 +110,7 @@ MainWindow::MainWindow()
     protFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     ////////
+    serial_le=new QLineEdit("COM5");
     QGridLayout *layout = new QGridLayout;
     play_btn=new QPushButton("");
     connect(play_btn,SIGNAL(pressed()),this,SLOT(playPressed()));
@@ -122,6 +131,7 @@ MainWindow::MainWindow()
     //    protSequenceGroup->setMaximumWidth(200);
     protPanelGroup->setMinimumWidth(200);
 
+
     prot_le=new QLineEdit[prot_le_s];
     for(int i=0;i<prot_le_s;i++)
     {
@@ -133,8 +143,10 @@ MainWindow::MainWindow()
 
     protSequenceLayout->addWidget(protFiller);
 
-    protPanelLayout->addWidget(play_btn);
-    protPanelLayout->addWidget(panelFiller);
+    protPanelLayout->addWidget(play_btn,0,0);
+    protPanelLayout->addWidget(serial_le,1,0);
+
+    protPanelLayout->addWidget(panelFiller,2,0);
 
     protPanelGroup->setLayout(protPanelLayout);
     protSequenceGroup->setLayout(protSequenceLayout);
@@ -173,7 +185,7 @@ MainWindow::MainWindow()
     connect(open_OK_btn,SIGNAL(released()),this,SLOT(openWithName()));
 
 
-
+/////////
     auto central1 = new QWidget;
     saveWindow=new QMainWindow(this);
     QGridLayout *layout1 = new QGridLayout;
@@ -196,6 +208,17 @@ MainWindow::MainWindow()
 
     setTitle();
 
+    connect(serial_le,SIGNAL(editingFinished()),this,SLOT(COMInit()));
+
+}
+
+void MainWindow::COMInit()
+{
+    serial_le->setDisabled(true);
+    qstr=serial_le->text();
+    std::string str1=qstr.toUtf8().constData();
+    std::wstring str(str1.begin(),str1.end());
+    hSerial.InitCOM(str.c_str());//was L"COM5"
 }
 
 void MainWindow::paintEvent(QPaintEvent *event)

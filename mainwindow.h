@@ -24,6 +24,8 @@ protected:
 #endif // QT_NO_CONTEXTMENU
 
 private slots:
+
+    void COMInit();
     void playPressed();
     void updateProtocol();
     void protChecked();

@@ -25,7 +25,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         main.cpp \
-        mainwindow.cpp
+        mainwindow.cpp \
+    serial.cpp \
+    stdafx.cpp
 
 HEADERS += \
-        mainwindow.h
+        mainwindow.h \
+    serial.h \
+    stdafx.h \
+    targetver.h
