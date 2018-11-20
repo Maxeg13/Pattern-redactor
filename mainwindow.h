@@ -16,8 +16,7 @@ class MainWindow : public QMainWindow
 public:
     MainWindow();
     void setTitle();
-    void paintEvent(QPaintEvent *event) override;
-    void mousePressEvent(QMouseEvent *event);
+
 protected:
 #ifndef QT_NO_CONTEXTMENU
     void contextMenuEvent(QContextMenuEvent *event) override;

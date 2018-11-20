@@ -3,15 +3,17 @@
 //forbit to open inappropriate extensions
 //editor
 #include <QtWidgets>
+#include "canvaswidget.h"
 #include "mainwindow.h"
 #include <QDebug>
 #include <QFile>
 #include "serial.h"
-//#include <QList>
+#include <QLabel>
+#include <QStackedWidget>
 
 
 
-
+QStackedWidget* stackedWidget;
 
 bool playOn=0;
 QPixmap* pixmapPlay;
@@ -33,6 +35,9 @@ QMainWindow* openWindow;
 QLineEdit* prot_le;
 QWidget *protWidget;
 QWidget *patternWidget;
+QGridLayout *patternCentralLayout;
+QGridLayout *protCentralLayout;
+canvasWidget* patternFiller;
 Serial hSerial;
 QString qstr;
 
@@ -73,13 +78,13 @@ void main_dealloc(int Nx, int Ny);
 
 MainWindow::MainWindow()
 {
-    mode =1;
+    mode=1;
 
-    main_alloc(Nx, Ny);
-    main_dealloc(Nx, Ny);
+//    main_alloc(Nx, Ny);
+//    main_dealloc(Nx, Ny);
 
-    Nx=6;
-    Ny=6;
+    Nx=5;
+    Ny=5;
 
     main_alloc(Nx, Ny);
 
@@ -88,16 +93,20 @@ MainWindow::MainWindow()
     pixmapStop= new QPixmap("C://Users//chibi//Pictures//stop-512.png");
 
 
-    patternWidget = new QWidget(this);
-    protWidget= new QWidget(this);
-    setCentralWidget(protWidget);
+    patternWidget = new QWidget();
+    protWidget= new QWidget();
+    stackedWidget=new QStackedWidget;
+    stackedWidget->addWidget(patternWidget);
+    stackedWidget->addWidget(protWidget);
+    patternCentralLayout=new QGridLayout();
+    protCentralLayout=new QGridLayout();
 
 
 
     QWidget *panelFiller = new QWidget;
     panelFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    QWidget *patternFiller = new QWidget;
+    patternFiller = new canvasWidget;
     patternFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     infoLabel = new QLabel(tr("<i>Choose a menu option, or right-click to "
@@ -110,7 +119,7 @@ MainWindow::MainWindow()
 
     ////////
     serial_le=new QLineEdit("COM5");
-    auto layout = new QGridLayout;
+    auto layout11 = new QGridLayout;
     prot_play_btn=new QPushButton("");
     pattern_play_btn=new QPushButton();
 
@@ -125,7 +134,6 @@ MainWindow::MainWindow()
     pattern_play_btn->setMaximumWidth(40);
 
 
-
     connect(prot_play_btn,SIGNAL(pressed()),this,SLOT(playPressed()));
 //    connect(pattern_play_btn,SIGNAL(pressed()),this,SLOT(playPressed()));
 
@@ -133,11 +141,11 @@ MainWindow::MainWindow()
     //    layout->addWidget(protFiller,0,0);
 
     auto protSequenceGroup=new QGroupBox("protocol sequence");
-    auto protPanelGroup=new QGroupBox("settings");
+    auto protPanelGroup=new QGroupBox("settings and control");
     auto protPanelLayout=new QGridLayout;
     auto protSequenceLayout=new QGridLayout;
 
-    auto patternTopGroup=new QGroupBox("settings");
+    auto patternTopGroup=new QGroupBox("settings and control");
     auto patternFillerGroup = new QGroupBox("pattern:");
     auto patternLayout = new QGridLayout;
 
@@ -149,17 +157,20 @@ MainWindow::MainWindow()
 
     auto layout3=new QGridLayout;
 
-    patternLayout->addWidget(Ny_le,0,0);
-    patternLayout->addWidget(Nx_le,0,1);
-//    patternLayout->addWidget(patternFiller,1,0,1,3);
+    auto label1=new QLabel("Ny=");
+    patternLayout->addWidget(label1,0,0);
+    patternLayout->addWidget(Ny_le,0,1);
+    auto label2=new QLabel("Nx=");
+    patternLayout->addWidget(label2,0,2);
+    patternLayout->addWidget(Nx_le,0,3);
+    patternLayout->addWidget(pattern_play_btn,0,4);
+
     patternTopGroup->setLayout(patternLayout);
     layout3->addWidget(patternTopGroup);
     auto layout4=new QGridLayout();
     layout4->addWidget(patternFiller);
     patternFillerGroup->setLayout(layout4);
     layout3->addWidget(patternFillerGroup);
-//    patternFillerGroup->setLayout(layout3);
-//    layout3->addWidget(patternFillerGroup);
     patternWidget->setLayout(layout3);
 
 
@@ -183,13 +194,13 @@ MainWindow::MainWindow()
     protSequenceGroup->setLayout(protSequenceLayout);
 
 
-    layout->addWidget(protSequenceGroup,0,0);
-    layout->addWidget(protPanelGroup,0,1);
+    layout11->addWidget(protSequenceGroup,0,0);
+    layout11->addWidget(protPanelGroup,0,1);
     //    layout->addWidget(infoLabel,1,0);
     //    layout->setRowMinimumHeight(1,500);
 
     //layout->addWidget(bottomFiller,2,0);
-    protWidget->setLayout(layout);
+    protWidget->setLayout(layout11);
 
     createActions();
     createMenus();
@@ -227,13 +238,13 @@ MainWindow::MainWindow()
 
     open_le=new QLineEdit("untitled.ptcl");
     auto central2 = new QWidget;
-    openWindow=new QMainWindow(this);
+    openWindow=new QMainWindow();
     QGridLayout *layout2 = new QGridLayout;
     layout2->addWidget(open_le);
     layout2->addWidget(open_OK_btn);
     central2->setLayout(layout2);
     openWindow->setCentralWidget(central2);
-    update();
+
 
     save_le->setText(prot_name);
 
@@ -241,6 +252,13 @@ MainWindow::MainWindow()
 
     connect(serial_le,SIGNAL(editingFinished()),this,SLOT(COMInit()));
 
+//    setCentralWidget(protWidget);
+//    setCentralWidget(patternWidget);
+    setCentralWidget(stackedWidget);
+    stackedWidget->setCurrentIndex(1);
+//    setCentralWidget(patternWidget);
+
+    patternFiller->update();
 }
 
 void MainWindow::COMInit()
@@ -252,64 +270,7 @@ void MainWindow::COMInit()
     hSerial.InitCOM(str.c_str());//was L"COM5"
 }
 
-void MainWindow::paintEvent(QPaintEvent *event)
-{
-    QPen pen;
 
-
-    //    pen.setStyle();
-    QPainter* painter=new QPainter(this);
-    painter->setRenderHint(QPainter::Antialiasing, true);
-
-    if(mode==0)
-    {
-
-        QRect r=QRect(mouse_p,mouse_p+QPoint(100,100));
-        for(int i=0;i<Ny;i++)
-            for(int j=0;j<Nx;j++)
-            {
-
-                if(checked_n==vibro_n[i][j])
-                {
-                    pen.setWidth(6);
-                    pen.setColor(QColor(0,150,0));
-                    vibro_rad[checked_n]=vibro_rad_stat*1.15;
-                }
-                else
-                {
-                    //                pen.setStyle(Qt::SolidLine);
-                    pen.setColor(QColor(0,0,0));
-                    pen.setWidth(2);
-                    vibro_rad[checked_n]=vibro_rad_stat;
-                }
-                painter->setPen(pen);
-
-                QPainterPath path;
-                QRadialGradient gradient=QRadialGradient(QPointF(vibro_x[j],vibro_y[i]),20,
-                                                         QPointF(vibro_x[j],vibro_y[i])+QPointF(50,50));
-                if(vibro_state[vibro_n[i][j]]!=0)
-                {
-                    gradient.setColorAt(1.0,QColor(170,170,120));
-                    gradient.setColorAt(0.0,QColor(250,250,200));
-                }
-                else
-                {
-                    gradient.setColorAt(1.0,QColor(100,100,100));
-                    gradient.setColorAt(0.0,QColor(200,200,200));
-                }
-
-                path.addEllipse ( QPointF(vibro_x[j],vibro_y[i]), vibro_rad[vibro_n[i][j]], vibro_rad[vibro_n[i][j]]);
-                painter->fillPath(path,gradient);
-                painter->drawPath(path);
-            }
-
-    }
-    else
-    {
-
-    }
-    delete painter;
-}
 
 void MainWindow::playPressed()
 {
@@ -321,25 +282,6 @@ void MainWindow::playPressed()
     prot_play_btn->setMaximumWidth(40);
 }
 
-void MainWindow::mousePressEvent(QMouseEvent *event)
-{
-    mouse_p=event->pos();
-
-    for(int i=0;i<Ny;i++)
-        for(int j=0;j<Nx;j++)
-        {
-            float r2=vibro_rad[vibro_n[i][j]]*vibro_rad[vibro_n[i][j]];
-            /////!!!!!!!!!!!!!!
-            QPoint vibro_p=QPoint(vibro_x[j],vibro_y[i]);
-            if(QPoint::dotProduct(vibro_p-mouse_p,vibro_p-mouse_p)<r2)
-            {
-                checked_n=vibro_n[i][j];
-                vibro_state[checked_n]=!vibro_state[checked_n];
-                qDebug()<<checked_n;
-            }
-        }
-    update();
-}
 
 #ifndef QT_NO_CONTEXTMENU
 void MainWindow::contextMenuEvent(QContextMenuEvent *event)
@@ -398,7 +340,7 @@ void MainWindow::openWithName()
             updateProtocol();
         }
     }
-    update();
+    //patternFiller->update();
     openWindow->hide();
 
     setTitle();
@@ -717,11 +659,11 @@ void MainWindow::editorChecked()
         protAct->setChecked(false);
         save_le->setText(pattern_name);
         open_le->setText(pattern_name);
-
-        //    for(int i=0;i<prot_le_s;i++)
-        //        prot_le[i].setVisible(false);
-//        protWidget->setVisible(false);
-        setCentralWidget(patternWidget);
+        patternFiller->update();
+//        qDebug()<<"1";
+//        setCentralWidget(patternWidget);
+        stackedWidget->setCurrentIndex(0);
+//        qDebug()<<"2";
 
     }
     else
@@ -729,11 +671,9 @@ void MainWindow::editorChecked()
         editorAct->setChecked(true);
         save_le->setText(prot_name);
         open_le->setText(prot_name);
-
     }
-    update();
+    //patternFiller->update();
     setTitle();
-
 }
 
 void MainWindow::protChecked()
@@ -744,20 +684,18 @@ void MainWindow::protChecked()
         editorAct->setChecked(false);
         save_le->setText(prot_name);
         open_le->setText(prot_name);
-        //    for(int i=0;i<prot_le_s;i++)
-        //        prot_le[i].setVisible(true);
-//        protWidget->setVisible(true);
-        setCentralWidget(protWidget);
+
+        stackedWidget->setCurrentIndex(1);
+//        setCentralWidget(protWidget);
     }
     else
     {
         protAct->setChecked(true);
         save_le->setText(pattern_name);
         open_le->setText(pattern_name);
-
     }
 
-    update();
+
     setTitle();
 }
 
@@ -833,7 +771,7 @@ void main_alloc(int Nx, int Ny)
 
 
     vibro_step=70;
-    int shift=80;
+    int shift=30;
     for (int j=0;j<Nx;j++)
         for(int i=0;i<Ny;i++)
         {
@@ -847,7 +785,7 @@ void main_alloc(int Nx, int Ny)
         vibro_x[i]=shift+vibro_step*i;
 
     for (int i=0;i<Ny;i++)
-        vibro_y[i]=shift*1.5+vibro_step*i;
+        vibro_y[i]=shift+vibro_step*i;
 }
 
 void main_dealloc(int Nx, int Ny)
