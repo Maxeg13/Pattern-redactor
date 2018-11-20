@@ -1,5 +1,6 @@
 //http://doc.qt.io/qt-5/qtwidgets-mainwindows-menus-example.html
 //names: prot (protocol) vs stimulator
+//forbit to open inappropriate extensions
 //editor
 #include <QtWidgets>
 #include "mainwindow.h"
@@ -15,19 +16,23 @@
 bool playOn=0;
 QPixmap* pixmapPlay;
 QPixmap* pixmapStop;
-QString prot_name=QString("untitled.ptlc");
+QString prot_name=QString("untitled.ptcl");
 QString pattern_name=QString("untitled.ptn");
 QPoint mouse_p;
 QPushButton* save_OK_btn;
 QPushButton* open_OK_btn;
-QPushButton* play_btn;
+QPushButton* prot_play_btn;
+QPushButton* pattern_play_btn;
 QLineEdit* save_le;
 QLineEdit* open_le;
 QLineEdit* serial_le;
+QLineEdit* Nx_le;
+QLineEdit* Ny_le;
 QMainWindow* saveWindow;
 QMainWindow* openWindow;
 QLineEdit* prot_le;
 QWidget *protWidget;
+QWidget *patternWidget;
 Serial hSerial;
 QString qstr;
 
@@ -59,40 +64,31 @@ int getVibroJ(int n);
 template<typename T>
 void memory_alloc(T** x, int s);
 
+template<typename T>
+void memory_dealloc(T** x);
+
+void main_alloc(int Nx, int Ny);
+
+void main_dealloc(int Nx, int Ny);
+
 MainWindow::MainWindow()
 {
     mode =1;
 
+    main_alloc(Nx, Ny);
+    main_dealloc(Nx, Ny);
+
+    Nx=6;
+    Ny=6;
+
+    main_alloc(Nx, Ny);
+
+
     pixmapPlay= new QPixmap("C://Users//chibi//Pictures//play_round1600.png");
     pixmapStop= new QPixmap("C://Users//chibi//Pictures//stop-512.png");
-    memory_alloc<int>(&vibro_x,Nx);
-    memory_alloc<int>(&vibro_y,Ny);
-    memory_alloc<int>(&vibro_rad,Nx*Ny);
-    memory_alloc<int>(&vibro_state,Nx*Ny);
-    memory_alloc<int*>(&vibro_n,Ny);
-    for(int i=0;i<Ny;i++)
-    {
-        memory_alloc<int>(&vibro_n[i],Nx);
-    }
-
-    vibro_step=70;
-    int shift=80;
-    for (int j=0;j<Nx;j++)
-        for(int i=0;i<Ny;i++)
-        {
-            vibro_n[i][j]=getVibroNum(i,j);
-            vibro_rad[vibro_n[i][j]]=vibro_rad_stat;
-            vibro_state[vibro_n[i][j]]=0;
-        }
 
 
-    for (int i=0;i<Nx;i++)
-        vibro_x[i]=shift+vibro_step*i;
-
-    for (int i=0;i<Ny;i++)
-        vibro_y[i]=shift*1.5+vibro_step*i;
-
-
+    patternWidget = new QWidget(this);
     protWidget= new QWidget(this);
     setCentralWidget(protWidget);
 
@@ -100,6 +96,9 @@ MainWindow::MainWindow()
 
     QWidget *panelFiller = new QWidget;
     panelFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    QWidget *patternFiller = new QWidget;
+    patternFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     infoLabel = new QLabel(tr("<i>Choose a menu option, or right-click to "
                               "invoke a context menu</i>"));
@@ -111,25 +110,57 @@ MainWindow::MainWindow()
 
     ////////
     serial_le=new QLineEdit("COM5");
-    QGridLayout *layout = new QGridLayout;
-    play_btn=new QPushButton("");
-    connect(play_btn,SIGNAL(pressed()),this,SLOT(playPressed()));
+    auto layout = new QGridLayout;
+    prot_play_btn=new QPushButton("");
+    pattern_play_btn=new QPushButton();
+
 
     QIcon ButtonIcon(*pixmapPlay);
-    play_btn->setIcon(ButtonIcon);
-    play_btn->setIconSize(QSize(30,30));
-    play_btn->setMaximumWidth(40);
+    prot_play_btn->setIcon(ButtonIcon);
+    prot_play_btn->setIconSize(QSize(30,30));
+    prot_play_btn->setMaximumWidth(40);
+
+    pattern_play_btn->setIcon(ButtonIcon);
+    pattern_play_btn->setIconSize(QSize(30,30));
+    pattern_play_btn->setMaximumWidth(40);
+
+
+
+    connect(prot_play_btn,SIGNAL(pressed()),this,SLOT(playPressed()));
+//    connect(pattern_play_btn,SIGNAL(pressed()),this,SLOT(playPressed()));
 
     //    layout->setMargin(5);
     //    layout->addWidget(protFiller,0,0);
 
-    QGroupBox* protSequenceGroup=new QGroupBox("protocol sequence");
-    QGroupBox* protPanelGroup=new QGroupBox("settings");
-    QGridLayout* protPanelLayout=new QGridLayout;
-    QGridLayout* protSequenceLayout=new QGridLayout;
+    auto protSequenceGroup=new QGroupBox("protocol sequence");
+    auto protPanelGroup=new QGroupBox("settings");
+    auto protPanelLayout=new QGridLayout;
+    auto protSequenceLayout=new QGridLayout;
+
+    auto patternTopGroup=new QGroupBox("settings");
+    auto patternFillerGroup = new QGroupBox("pattern:");
+    auto patternLayout = new QGridLayout;
 
     //    protSequenceGroup->setMaximumWidth(200);
     protPanelGroup->setMinimumWidth(200);
+
+    Nx_le=new QLineEdit("5");
+    Ny_le=new QLineEdit("5");
+
+    auto layout3=new QGridLayout;
+
+    patternLayout->addWidget(Ny_le,0,0);
+    patternLayout->addWidget(Nx_le,0,1);
+//    patternLayout->addWidget(patternFiller,1,0,1,3);
+    patternTopGroup->setLayout(patternLayout);
+    layout3->addWidget(patternTopGroup);
+    auto layout4=new QGridLayout();
+    layout4->addWidget(patternFiller);
+    patternFillerGroup->setLayout(layout4);
+    layout3->addWidget(patternFillerGroup);
+//    patternFillerGroup->setLayout(layout3);
+//    layout3->addWidget(patternFillerGroup);
+    patternWidget->setLayout(layout3);
 
 
     prot_le=new QLineEdit[prot_le_s];
@@ -143,7 +174,7 @@ MainWindow::MainWindow()
 
     protSequenceLayout->addWidget(protFiller);
 
-    protPanelLayout->addWidget(play_btn,0,0);
+    protPanelLayout->addWidget(prot_play_btn,0,0);
     protPanelLayout->addWidget(serial_le,1,0);
 
     protPanelLayout->addWidget(panelFiller,2,0);
@@ -254,8 +285,8 @@ void MainWindow::paintEvent(QPaintEvent *event)
                 painter->setPen(pen);
 
                 QPainterPath path;
-                QRadialGradient gradient=QRadialGradient(QPointF(vibro_x[j],vibro_x[i]),40,
-                                                         QPointF(vibro_y[j],vibro_y[i])+QPointF(50,50));
+                QRadialGradient gradient=QRadialGradient(QPointF(vibro_x[j],vibro_y[i]),20,
+                                                         QPointF(vibro_x[j],vibro_y[i])+QPointF(50,50));
                 if(vibro_state[vibro_n[i][j]]!=0)
                 {
                     gradient.setColorAt(1.0,QColor(170,170,120));
@@ -285,9 +316,9 @@ void MainWindow::playPressed()
     playOn=!playOn;
     QIcon ButtonIcon(playOn?(*pixmapStop):(*pixmapPlay));
 
-    play_btn->setIcon(ButtonIcon);
-    play_btn->setIconSize(QSize(30,30));
-    play_btn->setMaximumWidth(40);
+    prot_play_btn->setIcon(ButtonIcon);
+    prot_play_btn->setIconSize(QSize(30,30));
+    prot_play_btn->setMaximumWidth(40);
 }
 
 void MainWindow::mousePressEvent(QMouseEvent *event)
@@ -680,7 +711,7 @@ void MainWindow::createActions()
 
 void MainWindow::editorChecked()
 {
-    if(mode==1)
+    if(mode==1)//change
     {
         mode=0;
         protAct->setChecked(false);
@@ -689,7 +720,9 @@ void MainWindow::editorChecked()
 
         //    for(int i=0;i<prot_le_s;i++)
         //        prot_le[i].setVisible(false);
-        protWidget->setVisible(false);
+//        protWidget->setVisible(false);
+        setCentralWidget(patternWidget);
+
     }
     else
     {
@@ -713,7 +746,8 @@ void MainWindow::protChecked()
         open_le->setText(prot_name);
         //    for(int i=0;i<prot_le_s;i++)
         //        prot_le[i].setVisible(true);
-        protWidget->setVisible(true);
+//        protWidget->setVisible(true);
+        setCentralWidget(protWidget);
     }
     else
     {
@@ -775,3 +809,56 @@ void memory_alloc(T** x, int s)
     *x = new T[s];
 }
 
+template<typename T>
+void memory_dealloc(T** x)
+{
+    delete[] *x;
+}
+
+void main_alloc(int Nx, int Ny)
+{
+//    memory_alloc<int>(&vibro_x,5000);
+
+
+
+    memory_alloc<int>(&vibro_x,Nx);
+    memory_alloc<int>(&vibro_y,Ny);
+    memory_alloc<int>(&vibro_rad,Nx*Ny);
+    memory_alloc<int>(&vibro_state,Nx*Ny);
+    memory_alloc<int*>(&vibro_n,Ny);
+    for(int i=0;i<Ny;i++)
+    {
+        memory_alloc<int>(&vibro_n[i],Nx);
+    }
+
+
+    vibro_step=70;
+    int shift=80;
+    for (int j=0;j<Nx;j++)
+        for(int i=0;i<Ny;i++)
+        {
+            vibro_n[i][j]=getVibroNum(i,j);
+            vibro_rad[vibro_n[i][j]]=vibro_rad_stat;
+            vibro_state[vibro_n[i][j]]=0;
+        }
+
+
+    for (int i=0;i<Nx;i++)
+        vibro_x[i]=shift+vibro_step*i;
+
+    for (int i=0;i<Ny;i++)
+        vibro_y[i]=shift*1.5+vibro_step*i;
+}
+
+void main_dealloc(int Nx, int Ny)
+{
+    memory_dealloc<int>(&vibro_x);
+    memory_dealloc<int>(&vibro_y);
+    memory_dealloc<int>(&vibro_rad);
+    memory_dealloc<int>(&vibro_state);
+    for(int i=0;i<Ny;i++)
+    {
+        memory_dealloc<int>(&vibro_n[i]);
+    }
+    memory_dealloc<int*>(&vibro_n);
+}
