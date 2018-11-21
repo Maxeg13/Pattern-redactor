@@ -10,6 +10,7 @@
 #include <QtSerialPort>
 #include <QLabel>
 #include <QStackedWidget>
+#include <QTimer>
 
 
 
@@ -30,8 +31,10 @@ QLineEdit* open_le;
 QLineEdit* serial_le;
 QLineEdit* Nx_le;
 QLineEdit* Ny_le;
+QLineEdit* interval_le;
 QMainWindow* saveWindow;
 QMainWindow* openWindow;
+//////////////////////
 QLineEdit* prot_le;
 QWidget *protWidget;
 QWidget *patternWidget;
@@ -39,6 +42,7 @@ QGridLayout *patternCentralLayout;
 QGridLayout *protCentralLayout;
 canvasWidget* patternFiller;
 QSerialPort port;
+QTimer timer;
 //Serial* hSerial;
 QString qstr;
 
@@ -48,7 +52,7 @@ QFile* prot_file;
 QFile* pattern_file;
 QTextStream* out;
 
-int prot_N;
+int prot_N=1;
 int vibro_rad_stat=17;
 int prot_le_s=10;
 int *vibro_rad;
@@ -57,9 +61,10 @@ int *vibro_x;
 int *vibro_y;
 int *vibro_state;
 int **vibro_n;
-int Nx=5;
-int Ny=5;
+int Nx=3;
+int Ny=1;
 int checked_n=0;
+int prot_ind;
 
 int getVibroNum(int i,int j);
 
@@ -84,13 +89,9 @@ MainWindow::MainWindow()
     //    main_alloc(Nx, Ny);
     //    main_dealloc(Nx, Ny);
 
-    Nx=3;
-    Ny=1;
 
     main_alloc(Nx, Ny);
     resize(vibro_x[Nx-1]+100,270+vibro_y[Ny-1]);
-
-
 
     pixmapPlay= new QPixmap("C://Users//chibi//Pictures//play_round1600.png");
     pixmapStop= new QPixmap("C://Users//chibi//Pictures//stop-512.png");
@@ -156,8 +157,8 @@ MainWindow::MainWindow()
     //    protSequenceGroup->setMaximumWidth(200);
     protPanelGroup->setMinimumWidth(200);
 
-    Nx_le=new QLineEdit("5");
-    Ny_le=new QLineEdit("5");
+    Nx_le=new QLineEdit(QString::number(Nx));
+    Ny_le=new QLineEdit(QString::number(Ny));
     Nx_le->setMaximumWidth(60);
     Ny_le->setMaximumWidth(60);
 
@@ -169,7 +170,7 @@ MainWindow::MainWindow()
     auto label1=new QLabel("Ny=");
     patternLayout->addWidget(label1,0,0);
     patternLayout->addWidget(Ny_le,0,1);
-    auto label2=new QLabel("Nx=");
+    auto label2=new QLabel("   Nx=");
     patternLayout->addWidget(label2,0,2);
     patternLayout->addWidget(Nx_le,0,3);
     patternLayout->addWidget(pattern_play_btn,0,4);
@@ -195,10 +196,14 @@ MainWindow::MainWindow()
 
     protSequenceLayout->addWidget(protFiller);
 
-    protPanelLayout->addWidget(prot_play_btn,0,0);
-    protPanelLayout->addWidget(serial_le,1,0);
+    protPanelLayout->addWidget(prot_play_btn,0,0,2,2);
+    auto label3=new QLabel("interval, ms");
+    interval_le=new QLineEdit("300");
+//    protPanelLayout->addWidget(label3,0,1);
+//    protPanelLayout->addWidget(interval_le,1,1);
+    protPanelLayout->addWidget(serial_le,2,0);
 
-    protPanelLayout->addWidget(panelFiller,2,0);
+    protPanelLayout->addWidget(panelFiller,3,0);
 
     protPanelGroup->setLayout(protPanelLayout);
     protSequenceGroup->setLayout(protSequenceLayout);
@@ -269,7 +274,12 @@ MainWindow::MainWindow()
     //    setCentralWidget(patternWidget);
 
     patternFiller->update();
+
+    timer.setInterval(300);
+    connect(&timer,SIGNAL(timeout()),this,SLOT(protocolRoutine()));
 }
+
+
 
 void MainWindow::COMInit()
 {
@@ -278,12 +288,20 @@ void MainWindow::COMInit()
     std::string str1=qstr.toUtf8().constData();
     std::wstring str(str1.begin(),str1.end());
     //    hSerial=new Serial;
-//    port=new QSerialPort;
+    //    port=new QSerialPort;
     port.setPortName(qstr);
     port.setBaudRate(38400);
-    port.open(QIODevice::WriteOnly);
+    if(port.open(QIODevice::WriteOnly))
+    {
+        QString message = tr("com port is successfully opened");
+        statusBar()->showMessage(message);
+    }
+    else
+    {
+        QString message = tr("com port is not opened");
+        statusBar()->showMessage(message);
+    }
 
-    port.write("adddc",5);
 
     //    hSerial->InitCOM(str.c_str());//was L"COM5"
     serial_le->setDisabled(true);
@@ -295,6 +313,19 @@ void MainWindow::protPlayPressed()
 {
 
     protPlayOn=!protPlayOn;
+    if(protPlayOn)
+    {
+        prot_ind=0;
+        timer.start();
+    }
+    else
+    {
+        timer.stop();
+        port.write("a",1);
+        for(int i=0;i<Nx*Ny;i++)
+            port.write("d",1);
+        port.write("c",1);
+    }
     QIcon ButtonIcon(protPlayOn?(*pixmapStop):(*pixmapPlay));
 
     prot_play_btn->setIcon(ButtonIcon);
@@ -315,7 +346,6 @@ void MainWindow::patternPlayPressed()
 
     if(patternPlayOn)
     {
-        qDebug()<<"hello";
         port.write("a",1);
         for(int i=0;i<Nx*Ny;i++)
             switch(vibro_state[i])
@@ -327,6 +357,13 @@ void MainWindow::patternPlayPressed()
                 port.write("s",1);
                 break;
             }
+        port.write("c",1);
+    }
+    else
+    {
+        port.write("a",1);
+        for(int i=0;i<Nx*Ny;i++)
+            port.write("d",1);
         port.write("c",1);
     }
 }
@@ -346,6 +383,27 @@ void MainWindow::saveAs()
 {
     infoLabel->setText(tr("Invoked <b>File|Save</b>"));
     saveWindow->show();
+}
+
+void MainWindow::openWithName(QString s)
+{
+    QFile inputFile(s);
+    if (inputFile.open(QIODevice::ReadOnly))
+    {
+        QTextStream in(&inputFile);
+        QString line = in.readLine();
+        int i=0;
+        while (!line.isNull()) {
+            QStringList s_list=line.split("   ");
+            for(int j=0;j<Nx;j++)
+                vibro_state[vibro_n[i][j]]=s_list[j].toInt();
+            line = in.readLine();
+            i++;
+
+        }
+        patternFiller->update();
+
+    }
 }
 
 void MainWindow::openWithName()
@@ -368,6 +426,7 @@ void MainWindow::openWithName()
                 line = in.readLine();
                 i++;
             }
+            //            patternFiller->update();
         }
         else
         {
@@ -387,6 +446,8 @@ void MainWindow::openWithName()
             for(int i=prot_N;i<prot_le_s;i++)
                 prot_le[i].setText("");
             updateProtocol();
+
+            ////
         }
     }
     //patternFiller->update();
@@ -442,12 +503,12 @@ void MainWindow::saveWithName()
 
 void MainWindow::updateProtocol()
 {
-
     for(int i=0;i<prot_le_s;i++)
     {
         if(prot_le[i].text().isEmpty())
         {
             prot_N=i;
+            prot_le[i].setFocus();
             break;
         }
     }
@@ -463,7 +524,7 @@ void MainWindow::updateProtocol()
 
 void MainWindow::changeDim()
 {
-    hSerial->write('c');
+
     main_dealloc(Nx,Ny);
     Nx=Nx_le->text().toInt();
     Ny=Ny_le->text().toInt();
@@ -471,6 +532,30 @@ void MainWindow::changeDim()
     main_alloc(Nx,Ny);
     resize(vibro_x[Nx-1]+100,270+vibro_y[Ny-1]);
     patternFiller->update();
+}
+
+void MainWindow::protocolRoutine()
+{
+
+    qDebug()<<prot_ind;
+    openWithName(prot_le[prot_ind].text());
+    prot_ind++;
+    if(prot_ind>(prot_N-1))
+        prot_ind=0;
+
+    port.write("a",1);
+    for(int i=0;i<Nx*Ny;i++)
+        switch(vibro_state[i])
+        {
+        case 0:
+            port.write("d",1);
+            break;
+        case 1:
+            port.write("s",1);
+            break;
+        }
+    port.write("c",1);
+
 }
 
 void MainWindow::newFile()

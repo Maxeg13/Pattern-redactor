@@ -25,6 +25,7 @@ protected:
 #endif // QT_NO_CONTEXTMENU
 
 private slots:
+    void protocolRoutine();
     void changeDim();
     void COMInit();
     void patternPlayPressed();
@@ -37,6 +38,7 @@ private slots:
     void save();
     void saveWithName();
     void openWithName();
+    void openWithName(QString s);
     void saveAs();
     void print();
     void undo();
