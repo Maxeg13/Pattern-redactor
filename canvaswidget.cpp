@@ -30,12 +30,10 @@ void canvasWidget::paintEvent(QPaintEvent *event)
 
     if(mode==0)
     {
-
         QRect r=QRect(mouse_p,mouse_p+QPoint(100,100));
         for(int i=0;i<Ny;i++)
             for(int j=0;j<Nx;j++)
             {
-
                 if(checked_n==vibro_n[i][j])
                 {
                     pen.setWidth(6);

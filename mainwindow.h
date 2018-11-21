@@ -2,6 +2,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "serial.h"
 #include <QMainWindow>
 
 class QAction;
@@ -14,6 +15,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
+    Serial* hSerial;
     MainWindow();
     void setTitle();
 
@@ -23,9 +25,10 @@ protected:
 #endif // QT_NO_CONTEXTMENU
 
 private slots:
-
+    void changeDim();
     void COMInit();
-    void playPressed();
+    void patternPlayPressed();
+    void protPlayPressed();
     void updateProtocol();
     void protChecked();
     void editorChecked();

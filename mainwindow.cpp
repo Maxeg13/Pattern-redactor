@@ -7,7 +7,7 @@
 #include "mainwindow.h"
 #include <QDebug>
 #include <QFile>
-#include "serial.h"
+#include <QtSerialPort>
 #include <QLabel>
 #include <QStackedWidget>
 
@@ -15,7 +15,7 @@
 
 QStackedWidget* stackedWidget;
 
-bool playOn=0;
+bool protPlayOn=0, patternPlayOn=0;
 QPixmap* pixmapPlay;
 QPixmap* pixmapStop;
 QString prot_name=QString("untitled.ptcl");
@@ -38,7 +38,8 @@ QWidget *patternWidget;
 QGridLayout *patternCentralLayout;
 QGridLayout *protCentralLayout;
 canvasWidget* patternFiller;
-Serial hSerial;
+QSerialPort port;
+//Serial* hSerial;
 QString qstr;
 
 bool mode;//0-editor mode, 1-prot?
@@ -80,13 +81,15 @@ MainWindow::MainWindow()
 {
     mode=1;
 
-//    main_alloc(Nx, Ny);
-//    main_dealloc(Nx, Ny);
+    //    main_alloc(Nx, Ny);
+    //    main_dealloc(Nx, Ny);
 
-    Nx=5;
-    Ny=5;
+    Nx=3;
+    Ny=1;
 
     main_alloc(Nx, Ny);
+    resize(vibro_x[Nx-1]+100,270+vibro_y[Ny-1]);
+
 
 
     pixmapPlay= new QPixmap("C://Users//chibi//Pictures//play_round1600.png");
@@ -116,13 +119,14 @@ MainWindow::MainWindow()
 
     QWidget *protFiller = new QWidget;
     protFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    QWidget *patternTopFiller= new QWidget;
+    patternTopFiller->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Minimum);
 
     ////////
-    serial_le=new QLineEdit("COM5");
+    serial_le=new QLineEdit("COM12");
     auto layout11 = new QGridLayout;
     prot_play_btn=new QPushButton("");
     pattern_play_btn=new QPushButton();
-
 
     QIcon ButtonIcon(*pixmapPlay);
     prot_play_btn->setIcon(ButtonIcon);
@@ -134,8 +138,8 @@ MainWindow::MainWindow()
     pattern_play_btn->setMaximumWidth(40);
 
 
-    connect(prot_play_btn,SIGNAL(pressed()),this,SLOT(playPressed()));
-//    connect(pattern_play_btn,SIGNAL(pressed()),this,SLOT(playPressed()));
+    connect(prot_play_btn,SIGNAL(pressed()),this,SLOT(protPlayPressed()));
+    connect(pattern_play_btn,SIGNAL(pressed()),this,SLOT(patternPlayPressed()));
 
     //    layout->setMargin(5);
     //    layout->addWidget(protFiller,0,0);
@@ -154,6 +158,11 @@ MainWindow::MainWindow()
 
     Nx_le=new QLineEdit("5");
     Ny_le=new QLineEdit("5");
+    Nx_le->setMaximumWidth(60);
+    Ny_le->setMaximumWidth(60);
+
+    connect(Nx_le,SIGNAL(returnPressed()),this,SLOT(changeDim()));
+    connect(Ny_le,SIGNAL(returnPressed()),this,SLOT(changeDim()));
 
     auto layout3=new QGridLayout;
 
@@ -164,6 +173,7 @@ MainWindow::MainWindow()
     patternLayout->addWidget(label2,0,2);
     patternLayout->addWidget(Nx_le,0,3);
     patternLayout->addWidget(pattern_play_btn,0,4);
+    patternLayout->addWidget(patternTopFiller,0,5);
 
     patternTopGroup->setLayout(patternLayout);
     layout3->addWidget(patternTopGroup);
@@ -210,7 +220,7 @@ MainWindow::MainWindow()
 
     //    setWindowTitle(tr("Pattern Editor"));
     setMinimumSize(480, 450);
-    resize(480, 460);
+    //    resize(480, 460);
 
     QPalette Pal(palette());
 
@@ -227,7 +237,7 @@ MainWindow::MainWindow()
     connect(open_OK_btn,SIGNAL(released()),this,SLOT(openWithName()));
 
 
-/////////
+    /////////
     auto central1 = new QWidget;
     saveWindow=new QMainWindow(this);
     QGridLayout *layout1 = new QGridLayout;
@@ -252,36 +262,74 @@ MainWindow::MainWindow()
 
     connect(serial_le,SIGNAL(editingFinished()),this,SLOT(COMInit()));
 
-//    setCentralWidget(protWidget);
-//    setCentralWidget(patternWidget);
+    //    setCentralWidget(protWidget);
+    //    setCentralWidget(patternWidget);
     setCentralWidget(stackedWidget);
     stackedWidget->setCurrentIndex(1);
-//    setCentralWidget(patternWidget);
+    //    setCentralWidget(patternWidget);
 
     patternFiller->update();
 }
 
 void MainWindow::COMInit()
 {
-    serial_le->setDisabled(true);
+
     qstr=serial_le->text();
     std::string str1=qstr.toUtf8().constData();
     std::wstring str(str1.begin(),str1.end());
-    hSerial.InitCOM(str.c_str());//was L"COM5"
+    //    hSerial=new Serial;
+//    port=new QSerialPort;
+    port.setPortName(qstr);
+    port.setBaudRate(38400);
+    port.open(QIODevice::WriteOnly);
+
+    port.write("adddc",5);
+
+    //    hSerial->InitCOM(str.c_str());//was L"COM5"
+    serial_le->setDisabled(true);
 }
 
 
 
-void MainWindow::playPressed()
+void MainWindow::protPlayPressed()
 {
-    playOn=!playOn;
-    QIcon ButtonIcon(playOn?(*pixmapStop):(*pixmapPlay));
+
+    protPlayOn=!protPlayOn;
+    QIcon ButtonIcon(protPlayOn?(*pixmapStop):(*pixmapPlay));
 
     prot_play_btn->setIcon(ButtonIcon);
     prot_play_btn->setIconSize(QSize(30,30));
     prot_play_btn->setMaximumWidth(40);
 }
 
+
+void MainWindow::patternPlayPressed()
+{
+
+    patternPlayOn=!patternPlayOn;
+    QIcon ButtonIcon(patternPlayOn?(*pixmapStop):(*pixmapPlay));
+
+    pattern_play_btn->setIcon(ButtonIcon);
+    pattern_play_btn->setIconSize(QSize(30,30));
+    pattern_play_btn->setMaximumWidth(40);
+
+    if(patternPlayOn)
+    {
+        qDebug()<<"hello";
+        port.write("a",1);
+        for(int i=0;i<Nx*Ny;i++)
+            switch(vibro_state[i])
+            {
+            case 0:
+                port.write("d",1);
+                break;
+            case 1:
+                port.write("s",1);
+                break;
+            }
+        port.write("c",1);
+    }
+}
 
 #ifndef QT_NO_CONTEXTMENU
 void MainWindow::contextMenuEvent(QContextMenuEvent *event)
@@ -302,6 +350,7 @@ void MainWindow::saveAs()
 
 void MainWindow::openWithName()
 {
+
     QFile inputFile(open_le->text());
     if (inputFile.open(QIODevice::ReadOnly))
     {
@@ -410,6 +459,18 @@ void MainWindow::updateProtocol()
         else
             prot_le[i].setVisible(false);
     }
+}
+
+void MainWindow::changeDim()
+{
+    hSerial->write('c');
+    main_dealloc(Nx,Ny);
+    Nx=Nx_le->text().toInt();
+    Ny=Ny_le->text().toInt();
+    //    main_alloc(Nx_le->text().toInt(),Ny_le->text().toInt());
+    main_alloc(Nx,Ny);
+    resize(vibro_x[Nx-1]+100,270+vibro_y[Ny-1]);
+    patternFiller->update();
 }
 
 void MainWindow::newFile()
@@ -660,11 +721,7 @@ void MainWindow::editorChecked()
         save_le->setText(pattern_name);
         open_le->setText(pattern_name);
         patternFiller->update();
-//        qDebug()<<"1";
-//        setCentralWidget(patternWidget);
         stackedWidget->setCurrentIndex(0);
-//        qDebug()<<"2";
-
     }
     else
     {
@@ -684,9 +741,7 @@ void MainWindow::protChecked()
         editorAct->setChecked(false);
         save_le->setText(prot_name);
         open_le->setText(prot_name);
-
         stackedWidget->setCurrentIndex(1);
-//        setCentralWidget(protWidget);
     }
     else
     {
@@ -755,7 +810,7 @@ void memory_dealloc(T** x)
 
 void main_alloc(int Nx, int Ny)
 {
-//    memory_alloc<int>(&vibro_x,5000);
+    //    memory_alloc<int>(&vibro_x,5000);
 
 
 
@@ -786,6 +841,8 @@ void main_alloc(int Nx, int Ny)
 
     for (int i=0;i<Ny;i++)
         vibro_y[i]=shift+vibro_step*i;
+
+
 }
 
 void main_dealloc(int Nx, int Ny)

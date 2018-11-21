@@ -18,26 +18,28 @@ void Serial::InitCOM(LPCTSTR sPortName)
     {
         //    cout << "getting state error\n";
     }
-    dcbSerialParams.BaudRate=CBR_115200;
+    dcbSerialParams.BaudRate=CBR_38400;
     dcbSerialParams.ByteSize=8;
-    dcbSerialParams.StopBits=ONESTOPBIT;
+    dcbSerialParams.StopBits=TWOSTOPBITS;
     dcbSerialParams.Parity=NOPARITY;
     if(!SetCommState(hSerial, &dcbSerialParams))
     {
         //    cout << "error setting serial port state\n";
     }
-    char data[] = "H";
-     dwSize = sizeof(data);
-     dwBytesWritten;
-     ov;
+    char data[] = "a";
+    dwSize = sizeof(data);
+    dwBytesWritten;
+    ov;
 
-//    BOOL iRet = WriteFile (hSerial,TEXT("H"),dwSize,&dwBytesWritten ,NULL);
+    char c='a';
+    for(;;)
+        WriteFile(hSerial,&c,1,&dwBytesWritten ,NULL);
 }
 
 void Serial::write(char c)
 {
-     dwSize = 1;
-     WriteFile (hSerial,&c,dwSize,&dwBytesWritten ,NULL);
+
+         WriteFile (hSerial,&c,1,&dwBytesWritten ,NULL);
 }
 
 char Serial::ReadCOM(bool& ON)
@@ -51,7 +53,7 @@ char Serial::ReadCOM(bool& ON)
 
     if(iSize>0)
         ON=1;
-        return sReceivedChar;
+    return sReceivedChar;
 }
 
 void Serial::close()
