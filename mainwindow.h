@@ -25,6 +25,7 @@ protected:
 #endif // QT_NO_CONTEXTMENU
 
 private slots:
+    void loopChanged();
     void protocolRoutine();
     void changeDim();
     void COMInit();

@@ -19,6 +19,8 @@ QStackedWidget* stackedWidget;
 bool protPlayOn=0, patternPlayOn=0;
 QPixmap* pixmapPlay;
 QPixmap* pixmapStop;
+QPixmap* pixmapLoop;
+QPixmap* pixmapLoopStop;
 QString prot_name=QString("untitled.ptcl");
 QString pattern_name=QString("untitled.ptn");
 QPoint mouse_p;
@@ -26,6 +28,7 @@ QPushButton* save_OK_btn;
 QPushButton* open_OK_btn;
 QPushButton* prot_play_btn;
 QPushButton* pattern_play_btn;
+QPushButton* prot_loop_btn;
 QLineEdit* save_le;
 QLineEdit* open_le;
 QLineEdit* serial_le;
@@ -46,6 +49,7 @@ QTimer timer;
 //Serial* hSerial;
 QString qstr;
 
+bool protPlayFlag;
 bool mode;//0-editor mode, 1-prot?
 
 QFile* prot_file;
@@ -61,10 +65,11 @@ int *vibro_x;
 int *vibro_y;
 int *vibro_state;
 int **vibro_n;
-int Nx=3;
-int Ny=1;
+int Nx;
+int Ny;
 int checked_n=0;
 int prot_ind;
+bool prot_loop_ON=1;
 
 int getVibroNum(int i,int j);
 
@@ -86,6 +91,9 @@ MainWindow::MainWindow()
 {
     mode=1;
 
+    Nx=5;
+    Ny=5;
+
     //    main_alloc(Nx, Ny);
     //    main_dealloc(Nx, Ny);
 
@@ -93,8 +101,10 @@ MainWindow::MainWindow()
     main_alloc(Nx, Ny);
     resize(vibro_x[Nx-1]+100,270+vibro_y[Ny-1]);
 
-    pixmapPlay= new QPixmap("C://Users//chibi//Pictures//play_round1600.png");
-    pixmapStop= new QPixmap("C://Users//chibi//Pictures//stop-512.png");
+    pixmapLoop= new QPixmap("loop.png");
+    pixmapLoopStop= new QPixmap("loop-stop.png");
+    pixmapPlay= new QPixmap("play_round1600.png");
+    pixmapStop= new QPixmap("stop-512.png");
 
 
     patternWidget = new QWidget();
@@ -123,9 +133,16 @@ MainWindow::MainWindow()
     QWidget *patternTopFiller= new QWidget;
     patternTopFiller->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Minimum);
 
-    ////////
+    QIcon ButtonIcon2(*pixmapLoop);
+    prot_loop_btn=new QPushButton("");
+    prot_loop_btn->setIcon(ButtonIcon2);
+    prot_loop_btn->setIconSize(QSize(30,30));
+    prot_loop_btn->setMaximumWidth(40);
+    connect(prot_loop_btn,SIGNAL(pressed()),this,SLOT(loopChanged()));
+
     serial_le=new QLineEdit("COM12");
     auto layout11 = new QGridLayout;
+
     prot_play_btn=new QPushButton("");
     pattern_play_btn=new QPushButton();
 
@@ -196,14 +213,15 @@ MainWindow::MainWindow()
 
     protSequenceLayout->addWidget(protFiller);
 
-    protPanelLayout->addWidget(prot_play_btn,0,0,2,2);
+    protPanelLayout->addWidget(prot_play_btn,0,0,1,1);
+    protPanelLayout->addWidget(prot_loop_btn,0,1,1,1);
     auto label3=new QLabel("interval, ms");
     interval_le=new QLineEdit("300");
-//    protPanelLayout->addWidget(label3,0,1);
-//    protPanelLayout->addWidget(interval_le,1,1);
-    protPanelLayout->addWidget(serial_le,2,0);
+    //    protPanelLayout->addWidget(label3,0,1);
+    //    protPanelLayout->addWidget(interval_le,1,1);
+    protPanelLayout->addWidget(serial_le,1,0,1,2);
 
-    protPanelLayout->addWidget(panelFiller,3,0);
+    protPanelLayout->addWidget(panelFiller,2,0,1,2);
 
     protPanelGroup->setLayout(protPanelLayout);
     protSequenceGroup->setLayout(protSequenceLayout);
@@ -220,7 +238,7 @@ MainWindow::MainWindow()
     createActions();
     createMenus();
 
-    QString message = tr("A context menu is available by right-clicking");
+    QString message = tr("Строка подсказок ЗДЕСЬ");
     statusBar()->showMessage(message);
 
     //    setWindowTitle(tr("Pattern Editor"));
@@ -234,7 +252,8 @@ MainWindow::MainWindow()
     setPalette(Pal);
 
     //popup windows
-    save_le=new QLineEdit("untitled.ptn");
+    save_le=new QLineEdit("");
+    open_le = new QLineEdit("");
 
     save_OK_btn=new QPushButton("save");
     connect(save_OK_btn,SIGNAL(released()),this,SLOT(saveWithName()));
@@ -251,7 +270,7 @@ MainWindow::MainWindow()
     central1->setLayout(layout1);
     saveWindow->setCentralWidget(central1);
 
-    open_le=new QLineEdit("untitled.ptcl");
+    //    save_open_le=new QLineEdit("untitled.ptcl");
     auto central2 = new QWidget;
     openWindow=new QMainWindow();
     QGridLayout *layout2 = new QGridLayout;
@@ -261,7 +280,7 @@ MainWindow::MainWindow()
     openWindow->setCentralWidget(central2);
 
 
-    save_le->setText(prot_name);
+    //    save_open_le->setText(prot_name);
 
     setTitle();
 
@@ -275,7 +294,7 @@ MainWindow::MainWindow()
 
     patternFiller->update();
 
-    timer.setInterval(300);
+    timer.setInterval(800);
     connect(&timer,SIGNAL(timeout()),this,SLOT(protocolRoutine()));
 }
 
@@ -307,7 +326,13 @@ void MainWindow::COMInit()
     serial_le->setDisabled(true);
 }
 
+void MainWindow::loopChanged()
+{
+    prot_loop_ON=!prot_loop_ON;
+    QIcon ButtonIcon(prot_loop_ON?(*pixmapLoop):(*pixmapLoopStop));
 
+    prot_loop_btn->setIcon(ButtonIcon);
+}
 
 void MainWindow::protPlayPressed()
 {
@@ -317,6 +342,7 @@ void MainWindow::protPlayPressed()
     {
         prot_ind=0;
         timer.start();
+        protPlayFlag=true;
     }
     else
     {
@@ -382,27 +408,61 @@ void MainWindow::contextMenuEvent(QContextMenuEvent *event)
 void MainWindow::saveAs()
 {
     infoLabel->setText(tr("Invoked <b>File|Save</b>"));
+    qDebug()<<prot_name;
+    qDebug()<<pattern_name;
+    if(mode)
+        save_le->setText(prot_name);
+    else
+        save_le->setText(pattern_name);
+    //    qDebug()<<save_open_le->text();
     saveWindow->show();
 }
 
 void MainWindow::openWithName(QString s)
 {
+    int nx, ny;
     QFile inputFile(s);
     if (inputFile.open(QIODevice::ReadOnly))
     {
         QTextStream in(&inputFile);
         QString line = in.readLine();
         int i=0;
-        while (!line.isNull()) {
-            QStringList s_list=line.split("   ");
-            for(int j=0;j<Nx;j++)
-                vibro_state[vibro_n[i][j]]=s_list[j].toInt();
-            line = in.readLine();
+        QVector<QString> strs;
+        QStringList s_list=line.split("   ");
+        nx=s_list.size()-1;
+        while (!line.isNull())
+        {
+            strs.push_back(line);
+            line=in.readLine();
             i++;
-
         }
-        patternFiller->update();
+        ny=i;
 
+        Nx_le->setText(QString::number(nx));
+        Ny_le->setText(QString::number(ny));
+
+        if((nx==Nx)&&(ny==Ny))
+        {
+            qDebug()<<"all is nice";
+        }
+        else
+            changeDim();
+
+        for(int i=0;i<strs.size();i++)
+        {
+            QStringList s_list=strs[i].split("   ");
+
+            for(int j=0;j<nx;j++)
+            {
+                qDebug()<<s_list[j];
+                vibro_state[vibro_n[i][j]]=s_list[j].toInt();
+            }
+        }
+    }
+    else
+    {
+        QString message = tr("wrong file name");
+        statusBar()->showMessage(message);
     }
 }
 
@@ -416,16 +476,7 @@ void MainWindow::openWithName()
         {
             pattern_name=open_le->text();
             setTitle();
-            QTextStream in(&inputFile);
-            QString line = in.readLine();
-            int i=0;
-            while (!line.isNull()) {
-                QStringList s_list=line.split("   ");
-                for(int j=0;j<Nx;j++)
-                    vibro_state[vibro_n[i][j]]=s_list[j].toInt();
-                line = in.readLine();
-                i++;
-            }
+            openWithName(pattern_name);
             //            patternFiller->update();
         }
         else
@@ -449,6 +500,11 @@ void MainWindow::openWithName()
 
             ////
         }
+    }
+    else
+    {
+        QString message = tr("wrong file name");
+        statusBar()->showMessage(message);
     }
     //patternFiller->update();
     openWindow->hide();
@@ -512,7 +568,7 @@ void MainWindow::updateProtocol()
             break;
         }
     }
-    qDebug()<<prot_N;
+
     for(int i=0;i<prot_le_s;i++)
     {
         if(i<(prot_N+1))
@@ -537,11 +593,26 @@ void MainWindow::changeDim()
 void MainWindow::protocolRoutine()
 {
 
-    qDebug()<<prot_ind;
+
     openWithName(prot_le[prot_ind].text());
+    patternFiller->update();
+
     prot_ind++;
+
+
     if(prot_ind>(prot_N-1))
+    {
         prot_ind=0;
+
+        //        protPlayFlag=0;
+        if(!prot_loop_ON)
+        {
+            timer.stop();
+            protPlayPressed();
+        }
+    }
+
+    prot_le[prot_ind].setPalette(QPalette(QColor(255,0,0)));
 
     port.write("a",1);
     for(int i=0;i<Nx*Ny;i++)
@@ -566,6 +637,10 @@ void MainWindow::newFile()
 
 void MainWindow::open()
 {
+    if(mode)
+        open_le->setText(prot_name);
+    else
+        open_le->setText(pattern_name);
     openWindow->show();
     //    infoLabel->setText(tr("Invoked <b>File|Open</b>"));
 
@@ -651,9 +726,19 @@ void MainWindow::setParagraphSpacing()
 void MainWindow::about()
 {
     infoLabel->setText(tr("Invoked <b>Help|About</b>"));
-    QMessageBox::about(this, tr("About Menu"),
-                       tr("This is a <b>Stimulator</b> program"
-                          "\nv1.1"));
+    //    QMessageBox::about(this, tr("About Menu"),
+    //                       tr("This is a <b>Stimulator</b> program"
+    //                          "\nv1.1"));
+    QMessageBox msb;
+    msb.setWindowTitle("About");
+    msb.setText(tr("This is a Stimulator program v1.1 \n"
+                   "    Обратите внимание на подсказки внизу\n"
+                   "    Для соедининия с устройством в строке\n"
+                   "названий серийного порта нажмите ENTER\n"
+                   "    О состоянии подключения оповестит строка подсказок\n"
+                   "    Возможно сохранение как паттерна, так и протокола в отдельности\n"
+                   "в зависимости от запущенного режима"));
+    msb.exec();
 }
 
 void MainWindow::aboutQt()
@@ -803,16 +888,16 @@ void MainWindow::editorChecked()
     {
         mode=0;
         protAct->setChecked(false);
-        save_le->setText(pattern_name);
-        open_le->setText(pattern_name);
+        //        save_open_le->setText(pattern_name);
+        //        save_open_le->setText(pattern_name);
         patternFiller->update();
         stackedWidget->setCurrentIndex(0);
     }
     else
     {
         editorAct->setChecked(true);
-        save_le->setText(prot_name);
-        open_le->setText(prot_name);
+        //        save_open_le->setText(prot_name);
+        //        save_open_le->setText(prot_name);
     }
     //patternFiller->update();
     setTitle();
@@ -824,15 +909,15 @@ void MainWindow::protChecked()
     {
         mode=1;
         editorAct->setChecked(false);
-        save_le->setText(prot_name);
-        open_le->setText(prot_name);
+        //        save_open_le->setText(prot_name);
+        //        save_open_le->setText(prot_name);
         stackedWidget->setCurrentIndex(1);
     }
     else
     {
         protAct->setChecked(true);
-        save_le->setText(pattern_name);
-        open_le->setText(pattern_name);
+        //        save_open_le->setText(pattern_name);
+        //        save_open_le->setText(pattern_name);
     }
 
 
@@ -841,7 +926,7 @@ void MainWindow::protChecked()
 
 void MainWindow::setTitle()
 {
-    qDebug()<<mode;
+
     QString hm=mode?QString("protocol   "):QString("ptnEdit   ");
     QString hm2=mode?prot_name:pattern_name;
     setWindowTitle(QString("Stimulator->")+hm+hm2);
