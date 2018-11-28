@@ -97,4 +97,5 @@ void canvasWidget::mousePressEvent(QMouseEvent *event)
             }
         }
     update();
+    emit clickedSignal();
 }

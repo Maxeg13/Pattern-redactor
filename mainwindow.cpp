@@ -98,8 +98,8 @@ MainWindow::MainWindow()
 {
     mode=1;
 
-    Nx=5;
-    Ny=5;
+    Nx=8;
+    Ny=2;
 
     //    main_alloc(Nx, Ny);
     //    main_dealloc(Nx, Ny);
@@ -134,6 +134,8 @@ MainWindow::MainWindow()
 
     patternFiller = new canvasWidget;
     patternFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    connect(patternFiller,SIGNAL(clickedSignal()),this,SLOT(oneSend()));
 
     infoLabel = new QLabel(tr("<i>Choose a menu option, or right-click to "
                               "invoke a context menu</i>"));
@@ -392,8 +394,57 @@ void MainWindow::protPlayPressed()
 }
 
 
+//char pwm=PWM_le->text().toInt();
+//byte b=pwm;
+//port.write("a",1);
+//port.write(&pwm,1);
+//for(int s=0;s<Nx*Ny;s++)
+//    switch(vibro_state[vib_from_s[s]])
+//    {
+//    case 0:
+//        port.write("d",1);
+//        break;
+//    case 1:
+//        port.write("s",1);
+//        break;
+//    }
+//port.write("c",1);
+
+void MainWindow::oneSend()
+{
+    if(serial_inited)
+        if(patternPlayOn)
+        {
+            char pwm=PWM_le->text().toInt();
+            byte b=pwm;
+            port.write("a",1);
+            port.write(&pwm,1);
+            for(int s=0;s<Nx*Ny;s++)
+                switch(vibro_state[vib_from_s[s]])
+                {
+                case 0:
+                    port.write("d",1);
+                    break;
+                case 1:
+                    port.write("s",1);
+                    break;
+                }
+            port.write("c",1);
+        }
+        else
+        {
+            port.write("a",1);
+            for(int i=0;i<Nx*Ny;i++)
+                port.write("d",1);
+            port.write("c",1);
+        }
+
+}
+
 void MainWindow::patternPlayPressed()
 {
+    if(!serial_inited)
+        COMInit();
 
     patternPlayOn=!patternPlayOn;
     QIcon ButtonIcon(patternPlayOn?(*pixmapStop):(*pixmapPlay));
@@ -402,32 +453,8 @@ void MainWindow::patternPlayPressed()
     pattern_play_btn->setIconSize(QSize(30,30));
     pattern_play_btn->setMaximumWidth(40);
 
+    oneSend();
 
-    if(patternPlayOn)
-    {
-        char pwm=PWM_le->text().toInt();
-        byte b=pwm;
-        port.write("a",1);
-        port.write(&pwm,1);
-        for(int s=0;s<Nx*Ny;s++)
-            switch(vibro_state[vib_from_s[s]])
-            {
-            case 0:
-                port.write("d",1);
-                break;
-            case 1:
-                port.write("s",1);
-                break;
-            }
-        port.write("c",1);
-    }
-    else
-    {
-        port.write("a",1);
-        for(int i=0;i<Nx*Ny;i++)
-            port.write("d",1);
-        port.write("c",1);
-    }
 }
 
 #ifndef QT_NO_CONTEXTMENU

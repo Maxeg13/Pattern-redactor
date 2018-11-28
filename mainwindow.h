@@ -20,12 +20,14 @@ public:
     void setTitle();
     void setMapping();
 
+
 protected:
 #ifndef QT_NO_CONTEXTMENU
     void contextMenuEvent(QContextMenuEvent *event) override;
 #endif // QT_NO_CONTEXTMENU
 
 private slots:
+    void oneSend();
     void setLinearMapping();
     void setConfigMapping();
     void loopChanged();
