@@ -29,9 +29,12 @@ QPushButton* open_OK_btn;
 QPushButton* prot_play_btn;
 QPushButton* pattern_play_btn;
 QPushButton* prot_loop_btn;
+QPushButton* linear_mapping_btn;
+QPushButton* config_mapping_btn;
 QLineEdit* save_le;
 QLineEdit* open_le;
 QLineEdit* serial_le;
+QLineEdit* PWM_le;
 QLineEdit* Nx_le;
 QLineEdit* Ny_le;
 QLineEdit* interval_le;
@@ -56,7 +59,10 @@ QFile* prot_file;
 QFile* pattern_file;
 QTextStream* out;
 
+
 int prot_N=1;
+int *vib_from_s; //s - посылка
+int *s_from_vib;
 int vibro_rad_stat=17;
 int prot_le_s=10;
 int *vibro_rad;
@@ -70,6 +76,7 @@ int Ny;
 int checked_n=0;
 int prot_ind;
 bool prot_loop_ON=1;
+bool serial_inited=0;
 
 int getVibroNum(int i,int j);
 
@@ -100,6 +107,11 @@ MainWindow::MainWindow()
 
     main_alloc(Nx, Ny);
     resize(vibro_x[Nx-1]+100,270+vibro_y[Ny-1]);
+
+    linear_mapping_btn=new QPushButton("set linear mapping");
+    config_mapping_btn= new QPushButton("set config mapping");
+    connect(linear_mapping_btn,SIGNAL(pressed()),this,SLOT(setLinearMapping()));
+    connect(config_mapping_btn,SIGNAL(pressed()),this,SLOT(setConfigMapping()));
 
     pixmapLoop= new QPixmap("loop.png");
     pixmapLoopStop= new QPixmap("loop-stop.png");
@@ -184,14 +196,21 @@ MainWindow::MainWindow()
 
     auto layout3=new QGridLayout;
 
-    auto label1=new QLabel("Ny=");
+    auto label1=new QLabel("Ny = ");
     patternLayout->addWidget(label1,0,0);
     patternLayout->addWidget(Ny_le,0,1);
-    auto label2=new QLabel("   Nx=");
+    auto label2=new QLabel("   Nx = ");
     patternLayout->addWidget(label2,0,2);
     patternLayout->addWidget(Nx_le,0,3);
     patternLayout->addWidget(pattern_play_btn,0,4);
-    patternLayout->addWidget(patternTopFiller,0,5);
+    auto label4 = new QLabel("   PWM = ");
+    PWM_le=new QLineEdit("40");
+    connect(PWM_le,SIGNAL(editingFinished()),this,SLOT(patternPlayPressed()));
+    patternLayout->addWidget(label4,0,5);
+    patternLayout->addWidget(PWM_le,0,6);
+    patternLayout->addWidget(patternTopFiller,0,7);
+    patternLayout->addWidget(linear_mapping_btn,1,0,1,2);
+    patternLayout->addWidget(config_mapping_btn,1,2,1,2);
 
     patternTopGroup->setLayout(patternLayout);
     layout3->addWidget(patternTopGroup);
@@ -215,13 +234,15 @@ MainWindow::MainWindow()
 
     protPanelLayout->addWidget(prot_play_btn,0,0,1,1);
     protPanelLayout->addWidget(prot_loop_btn,0,1,1,1);
-    auto label3=new QLabel("interval, ms");
+    auto label3=new QLabel("interval, ms: ");
     interval_le=new QLineEdit("300");
     //    protPanelLayout->addWidget(label3,0,1);
     //    protPanelLayout->addWidget(interval_le,1,1);
     protPanelLayout->addWidget(serial_le,1,0,1,2);
+    protPanelLayout->addWidget(label3,2,0);
+    protPanelLayout->addWidget(interval_le,2,1);
 
-    protPanelLayout->addWidget(panelFiller,2,0,1,2);
+    protPanelLayout->addWidget(panelFiller,3,0,1,2);
 
     protPanelGroup->setLayout(protPanelLayout);
     protSequenceGroup->setLayout(protSequenceLayout);
@@ -296,13 +317,15 @@ MainWindow::MainWindow()
 
     timer.setInterval(800);
     connect(&timer,SIGNAL(timeout()),this,SLOT(protocolRoutine()));
+
+    setMapping();
 }
 
 
 
 void MainWindow::COMInit()
 {
-
+    serial_inited=1;
     qstr=serial_le->text();
     std::string str1=qstr.toUtf8().constData();
     std::wstring str(str1.begin(),str1.end());
@@ -336,18 +359,27 @@ void MainWindow::loopChanged()
 
 void MainWindow::protPlayPressed()
 {
+    if(!serial_inited)
+        COMInit();
 
     protPlayOn=!protPlayOn;
     if(protPlayOn)
     {
         prot_ind=0;
         timer.start();
+        timer.setInterval(interval_le->text().toInt());
         protPlayFlag=true;
     }
     else
     {
         timer.stop();
+
+        char pwm=PWM_le->text().toInt();
+        byte b=pwm;
         port.write("a",1);
+        port.write(&pwm,1);
+        //        PWM_le->text();
+        //        PWM_le->text().toLocal8Bit().data(
         for(int i=0;i<Nx*Ny;i++)
             port.write("d",1);
         port.write("c",1);
@@ -370,11 +402,15 @@ void MainWindow::patternPlayPressed()
     pattern_play_btn->setIconSize(QSize(30,30));
     pattern_play_btn->setMaximumWidth(40);
 
+
     if(patternPlayOn)
     {
+        char pwm=PWM_le->text().toInt();
+        byte b=pwm;
         port.write("a",1);
-        for(int i=0;i<Nx*Ny;i++)
-            switch(vibro_state[i])
+        port.write(&pwm,1);
+        for(int s=0;s<Nx*Ny;s++)
+            switch(vibro_state[vib_from_s[s]])
             {
             case 0:
                 port.write("d",1);
@@ -426,18 +462,23 @@ void MainWindow::openWithName(QString s)
     {
         QTextStream in(&inputFile);
         QString line = in.readLine();
+        PWM_le->setText(line);
         int i=0;
         QVector<QString> strs;
         QStringList s_list=line.split("   ");
         nx=s_list.size()-1;
         while (!line.isNull())
         {
+            if(i==1)
+            {
+                QStringList s_list=line.split("   ");
+                nx=s_list.size()-1;
+            }
             strs.push_back(line);
             line=in.readLine();
             i++;
         }
-        ny=i;
-
+        ny=i-1;
         Nx_le->setText(QString::number(nx));
         Ny_le->setText(QString::number(ny));
 
@@ -447,15 +488,16 @@ void MainWindow::openWithName(QString s)
         }
         else
             changeDim();
-
-        for(int i=0;i<strs.size();i++)
+        //        qDebug()<<strs.size();
+        for(int i=1;i<strs.size();i++)
         {
             QStringList s_list=strs[i].split("   ");
 
+            qDebug()<<"\n";
             for(int j=0;j<nx;j++)
             {
                 qDebug()<<s_list[j];
-                vibro_state[vibro_n[i][j]]=s_list[j].toInt();
+                vibro_state[vibro_n[i-1][j]]=s_list[j].toInt();
             }
         }
     }
@@ -475,6 +517,7 @@ void MainWindow::openWithName()
         if(mode==0)
         {
             pattern_name=open_le->text();
+            save_le->setText(pattern_name);
             setTitle();
             openWithName(pattern_name);
             //            patternFiller->update();
@@ -524,6 +567,8 @@ void MainWindow::saveWithName()
 
         out=new QTextStream(pattern_file);
         out->flush();
+        *out<<PWM_le->text();
+        *out<<"\n";
         for(int i=0;i<Ny;i++)
         {
             for(int j=0;j<Nx;j++)
@@ -614,9 +659,12 @@ void MainWindow::protocolRoutine()
 
     prot_le[prot_ind].setPalette(QPalette(QColor(255,0,0)));
 
+    char pwm=PWM_le->text().toInt();
     port.write("a",1);
-    for(int i=0;i<Nx*Ny;i++)
-        switch(vibro_state[i])
+    port.write(&pwm,1);
+
+    for(int s=0;s<Nx*Ny;s++)
+        switch(vibro_state[vib_from_s[s]])
         {
         case 0:
             port.write("d",1);
@@ -737,7 +785,9 @@ void MainWindow::about()
                    "названий серийного порта нажмите ENTER\n"
                    "    О состоянии подключения оповестит строка подсказок\n"
                    "    Возможно сохранение как паттерна, так и протокола в отдельности\n"
-                   "в зависимости от запущенного режима"));
+                   "в зависимости от запущенного режима\n"
+                   "    Значение PWM - целое число в пределах от 0 до 20,"
+                   "применяется для всего паттерна целиком"));
     msb.exec();
 }
 
@@ -745,6 +795,28 @@ void MainWindow::aboutQt()
 {
     infoLabel->setText(tr("Invoked <b>Help|About Qt</b>"));
 }
+
+void MainWindow::setMapping()
+{
+    QFile inputFile("mapping_config");
+    if (inputFile.open(QIODevice::ReadOnly))
+    {
+        QTextStream in(&inputFile);
+        QString line = in.readLine();
+        QStringList s_list=line.split("=");
+        int s=0;
+        while (!line.isNull())
+        {
+            qDebug()<<s_list[1];
+            vib_from_s[s]=s_list[1].toInt();
+            s++;
+            line=in.readLine();
+            s_list=line.split("=");
+
+        }
+    }
+}
+
 
 void MainWindow::createActions()
 {
@@ -882,6 +954,19 @@ void MainWindow::createActions()
     leftAlignAct->setChecked(true);
 }
 
+void MainWindow::setLinearMapping()
+{
+    for(int i=0;i<Nx*Ny;i++)
+        vib_from_s[i]=i;
+}
+
+void MainWindow::setConfigMapping()
+{
+    setMapping();
+}
+
+
+
 void MainWindow::editorChecked()
 {
     if(mode==1)//change
@@ -983,7 +1068,8 @@ void main_alloc(int Nx, int Ny)
     //    memory_alloc<int>(&vibro_x,5000);
 
 
-
+    memory_alloc<int>(&vib_from_s,Nx*Ny);
+    memory_alloc<int>(&s_from_vib,Nx*Ny);
     memory_alloc<int>(&vibro_x,Nx);
     memory_alloc<int>(&vibro_y,Ny);
     memory_alloc<int>(&vibro_rad,Nx*Ny);
@@ -1012,11 +1098,26 @@ void main_alloc(int Nx, int Ny)
     for (int i=0;i<Ny;i++)
         vibro_y[i]=shift+vibro_step*i;
 
+    //////////////////
+    //manually
+
+    for(int i=0;i<Nx*Ny;i++)
+        vib_from_s[i]=i;
+    //    vib_from_s[0]=0;
+    //    vib_from_s[1]=2;
+    //    vib_from_s[2]=3;
+    //    vib_from_s[3]=1;
+    //    for(int i=0;i<4;i++)
+    //    {
+    //        s_from_vib[vib_from_s[i]]=i;
+    //    }
 
 }
 
 void main_dealloc(int Nx, int Ny)
 {
+    memory_dealloc<int>(&vib_from_s);
+    memory_dealloc<int>(&s_from_vib);
     memory_dealloc<int>(&vibro_x);
     memory_dealloc<int>(&vibro_y);
     memory_dealloc<int>(&vibro_rad);

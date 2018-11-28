@@ -18,6 +18,7 @@ public:
     Serial* hSerial;
     MainWindow();
     void setTitle();
+    void setMapping();
 
 protected:
 #ifndef QT_NO_CONTEXTMENU
@@ -25,6 +26,8 @@ protected:
 #endif // QT_NO_CONTEXTMENU
 
 private slots:
+    void setLinearMapping();
+    void setConfigMapping();
     void loopChanged();
     void protocolRoutine();
     void changeDim();

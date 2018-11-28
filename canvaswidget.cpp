@@ -1,5 +1,6 @@
 #include "canvaswidget.h"
 #include <QMouseEvent>
+#include <QLineEdit>
 extern bool mode;
 extern int *vibro_rad;
 extern int vibro_rad_stat;
@@ -11,6 +12,7 @@ extern int Nx;
 extern int Ny;
 extern int checked_n;
 extern int *vibro_state;
+extern QLineEdit* PWM_le;
 
 canvasWidget::canvasWidget()
 {
