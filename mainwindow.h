@@ -27,6 +27,7 @@ protected:
 #endif // QT_NO_CONTEXTMENU
 
 private slots:
+    void setInterval();
     void oneSend();
     void setLinearMapping();
     void setConfigMapping();

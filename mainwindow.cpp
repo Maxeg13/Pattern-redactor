@@ -238,6 +238,7 @@ MainWindow::MainWindow()
     protPanelLayout->addWidget(prot_loop_btn,0,1,1,1);
     auto label3=new QLabel("interval, ms: ");
     interval_le=new QLineEdit("300");
+    connect(interval_le,SIGNAL(editingFinished()),this,SLOT(setInterval()));
     //    protPanelLayout->addWidget(label3,0,1);
     //    protPanelLayout->addWidget(interval_le,1,1);
     protPanelLayout->addWidget(serial_le,1,0,1,2);
@@ -324,6 +325,10 @@ MainWindow::MainWindow()
 }
 
 
+void MainWindow::setInterval()
+{
+    timer.setInterval(interval_le->text().toInt());
+}
 
 void MainWindow::COMInit()
 {
@@ -832,11 +837,15 @@ void MainWindow::setMapping()
         QString line = in.readLine();
         QStringList s_list=line.split("=");
         int s=0;
-        while (!line.isNull())
+        int i;
+        while ((!line.isNull())&&(i<Ny))
         {
+
             qDebug()<<s_list[1];
             vib_from_s[s]=s_list[1].toInt();
+
             s++;
+            i=s/Nx;
             line=in.readLine();
             s_list=line.split("=");
 
