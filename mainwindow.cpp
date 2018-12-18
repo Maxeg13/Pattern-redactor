@@ -276,8 +276,8 @@ MainWindow::MainWindow()
     setPalette(Pal);
 
     //popup windows
-    save_le=new QLineEdit("");
-    open_le = new QLineEdit("");
+    save_le=new QLineEdit("untitled.ptcl");
+    open_le = new QLineEdit("untitled.ptcl");
 
     save_OK_btn=new QPushButton("save");
     connect(save_OK_btn,SIGNAL(released()),this,SLOT(saveWithName()));
@@ -321,6 +321,8 @@ MainWindow::MainWindow()
     timer.setInterval(800);
     connect(&timer,SIGNAL(timeout()),this,SLOT(protocolRoutine()));
 
+    openWithName(pattern_name);
+    openWithName();
     setMapping();
 }
 
@@ -486,12 +488,23 @@ void MainWindow::saveAs()
     saveWindow->show();
 }
 
-void MainWindow::openWithName(QString s)
+void MainWindow::openWithNameHere(QString s)//pattern
+{
+    pattern_name=s;
+    save_le->setText(pattern_name);
+    setTitle();
+    openWithName(s);
+}
+
+void MainWindow::openWithName(QString s)//pattern
 {
     int nx, ny;
     QFile inputFile(s);
     if (inputFile.open(QIODevice::ReadOnly))
     {
+        pattern_name=s;
+
+
         QTextStream in(&inputFile);
         QString line = in.readLine();
         PWM_le->setText(line);
@@ -516,7 +529,7 @@ void MainWindow::openWithName(QString s)
 
         if((nx==Nx)&&(ny==Ny))
         {
-            qDebug()<<"all is nice";
+            //            qDebug()<<"all is nice";
         }
         else
             changeDim();
@@ -525,10 +538,10 @@ void MainWindow::openWithName(QString s)
         {
             QStringList s_list=strs[i].split("   ");
 
-            qDebug()<<"\n";
+            //            qDebug()<<"\n";
             for(int j=0;j<nx;j++)
             {
-                qDebug()<<s_list[j];
+                //                qDebug()<<s_list[j];
                 vibro_state[vibro_n[i-1][j]]=s_list[j].toInt();
             }
         }
@@ -587,6 +600,16 @@ void MainWindow::openWithName()
     setTitle();
 }
 
+void MainWindow::save()
+{
+    if(mode==0)
+        save_le->setText(pattern_name);
+    else
+        save_le->setText(prot_name);
+    saveWithName();
+
+}
+
 void MainWindow::saveWithName()
 {
     if(mode==0)
@@ -629,6 +652,7 @@ void MainWindow::saveWithName()
     }
 
     saveWindow->hide();
+    qDebug()<<mode;
     setTitle();
 }
 
@@ -672,6 +696,7 @@ void MainWindow::protocolRoutine()
 
 
     openWithName(prot_le[prot_ind].text());
+    setTitle();
     patternFiller->update();
 
     prot_ind++;
@@ -726,7 +751,7 @@ void MainWindow::open()
 
 }
 
-void MainWindow::save()
+void MainWindow::save11()
 {
     infoLabel->setText(tr("Invoked <b>File|Save</b>"));
 }
@@ -869,7 +894,7 @@ void MainWindow::createActions()
     saveAct = new QAction(tr("&Save"), this);
     saveAct->setShortcuts(QKeySequence::Save);
     saveAct->setStatusTip(tr("Save the pattern"));
-    connect(saveAct, &QAction::triggered, this, &MainWindow::saveWithName);
+    connect(saveAct, &QAction::triggered, this, &MainWindow::save);
 
 
     saveAsAct = new QAction(tr("&Save as ..."), this);

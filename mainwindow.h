@@ -27,6 +27,7 @@ protected:
 #endif // QT_NO_CONTEXTMENU
 
 private slots:
+    void openWithNameHere(QString);
     void setInterval();
     void oneSend();
     void setLinearMapping();
@@ -43,6 +44,7 @@ private slots:
     void newFile();
     void open();
     void save();
+    void save11();
     void saveWithName();
     void openWithName();
     void openWithName(QString s);
