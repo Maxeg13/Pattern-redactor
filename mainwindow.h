@@ -27,8 +27,9 @@ protected:
 #endif // QT_NO_CONTEXTMENU
 
 private slots:
+    void changePWMmode();
     void openWithNameHere(QString);
-    void setInterval();
+    void set_LEs();
     void oneSend();
     void setLinearMapping();
     void setConfigMapping();

@@ -24,6 +24,7 @@ QPixmap* pixmapLoopStop;
 QString prot_name=QString("untitled.ptcl");
 QString pattern_name=QString("untitled.ptn");
 QPoint mouse_p;
+QPushButton* PWM_mode_btn;
 QPushButton* save_OK_btn;
 QPushButton* open_OK_btn;
 QPushButton* prot_play_btn;
@@ -35,6 +36,7 @@ QLineEdit* save_le;
 QLineEdit* open_le;
 QLineEdit* serial_le;
 QLineEdit* PWM_le;
+QLineEdit* global_PWM_le;
 QLineEdit* Nx_le;
 QLineEdit* Ny_le;
 QLineEdit* interval_le;
@@ -64,19 +66,21 @@ int prot_N=1;
 int *vib_from_s; //s - посылка
 int *s_from_vib;
 int vibro_rad_stat=17;
-int prot_le_s=10;
+int prot_le_s=20;
 int *vibro_rad;
 int vibro_step;
 int *vibro_x;
 int *vibro_y;
 int *vibro_state;
 int **vibro_n;
+int global_PWM=35;
 int Nx;
 int Ny;
 int checked_n=0;
 int prot_ind;
 bool prot_loop_ON=1;
 bool serial_inited=0;
+bool global_PWM_ON=1;
 
 int getVibroNum(int i,int j);
 
@@ -93,6 +97,11 @@ void memory_dealloc(T** x);
 void main_alloc(int Nx, int Ny);
 
 void main_dealloc(int Nx, int Ny);
+
+void MainWindow::changePWMmode()
+{
+    global_PWM_ON=!global_PWM_ON;
+}
 
 MainWindow::MainWindow()
 {
@@ -207,6 +216,7 @@ MainWindow::MainWindow()
     patternLayout->addWidget(pattern_play_btn,0,4);
     auto label4 = new QLabel("   PWM = ");
     PWM_le=new QLineEdit("40");
+    global_PWM_le=new QLineEdit("35");
     connect(PWM_le,SIGNAL(editingFinished()),this,SLOT(patternPlayPressed()));
     patternLayout->addWidget(label4,0,5);
     patternLayout->addWidget(PWM_le,0,6);
@@ -222,6 +232,7 @@ MainWindow::MainWindow()
     layout3->addWidget(patternFillerGroup);
     patternWidget->setLayout(layout3);
 
+    connect(global_PWM_le,SIGNAL(editingFinished()),this,SLOT(set_LEs()));
 
     prot_le=new QLineEdit[prot_le_s];
     for(int i=0;i<prot_le_s;i++)
@@ -234,18 +245,25 @@ MainWindow::MainWindow()
 
     protSequenceLayout->addWidget(protFiller);
 
+    PWM_mode_btn=new QPushButton("global PWM");
+    connect(PWM_mode_btn,SIGNAL(pressed()),this,SLOT(changePWMmode()));
+
     protPanelLayout->addWidget(prot_play_btn,0,0,1,1);
     protPanelLayout->addWidget(prot_loop_btn,0,1,1,1);
     auto label3=new QLabel("interval, ms: ");
+    auto label5=new QLabel("global PWM:");
     interval_le=new QLineEdit("300");
-    connect(interval_le,SIGNAL(editingFinished()),this,SLOT(setInterval()));
+    connect(interval_le,SIGNAL(editingFinished()),this,SLOT(set_LEs()));
     //    protPanelLayout->addWidget(label3,0,1);
     //    protPanelLayout->addWidget(interval_le,1,1);
     protPanelLayout->addWidget(serial_le,1,0,1,2);
     protPanelLayout->addWidget(label3,2,0);
     protPanelLayout->addWidget(interval_le,2,1);
+    protPanelLayout->addWidget(label5,3,0);
+    protPanelLayout->addWidget(global_PWM_le,3,1);
+    protPanelLayout->addWidget(PWM_mode_btn,4,0);
 
-    protPanelLayout->addWidget(panelFiller,3,0,1,2);
+    protPanelLayout->addWidget(panelFiller,5,0,1,2);
 
     protPanelGroup->setLayout(protPanelLayout);
     protSequenceGroup->setLayout(protSequenceLayout);
@@ -327,9 +345,10 @@ MainWindow::MainWindow()
 }
 
 
-void MainWindow::setInterval()
+void MainWindow::set_LEs()
 {
     timer.setInterval(interval_le->text().toInt());
+    global_PWM=global_PWM_le->text().toInt();
 }
 
 void MainWindow::COMInit()
@@ -381,14 +400,18 @@ void MainWindow::protPlayPressed()
     }
     else
     {
+        //        qDebug()<<"hello";
         timer.stop();
 
-        char pwm=PWM_le->text().toInt();
+        char pwm;
+        if(global_PWM_ON)
+             pwm=global_PWM;
+        else
+             pwm=PWM_le->text().toInt();
         byte b=pwm;
         port.write("a",1);
         port.write(&pwm,1);
-        //        PWM_le->text();
-        //        PWM_le->text().toLocal8Bit().data(
+
         for(int i=0;i<Nx*Ny;i++)
             port.write("d",1);
         port.write("c",1);
@@ -422,7 +445,11 @@ void MainWindow::oneSend()
     if(serial_inited)
         if(patternPlayOn)
         {
-            char pwm=PWM_le->text().toInt();
+            char pwm;
+            if(global_PWM_ON)
+                 pwm=global_PWM;
+            else
+                 pwm=PWM_le->text().toInt();
             byte b=pwm;
             port.write("a",1);
             port.write(&pwm,1);
@@ -699,24 +726,15 @@ void MainWindow::protocolRoutine()
     setTitle();
     patternFiller->update();
 
-    prot_ind++;
 
-
-    if(prot_ind>(prot_N-1))
-    {
-        prot_ind=0;
-
-        //        protPlayFlag=0;
-        if(!prot_loop_ON)
-        {
-            timer.stop();
-            protPlayPressed();
-        }
-    }
 
     prot_le[prot_ind].setPalette(QPalette(QColor(255,0,0)));
 
-    char pwm=PWM_le->text().toInt();
+    char pwm;
+    if(global_PWM_ON)
+         pwm=global_PWM;
+    else
+         pwm=PWM_le->text().toInt();
     port.write("a",1);
     port.write(&pwm,1);
 
@@ -732,6 +750,19 @@ void MainWindow::protocolRoutine()
         }
     port.write("c",1);
 
+
+    prot_ind++;
+    if(prot_ind>(prot_N-1))
+    {
+        prot_ind=0;
+
+        //        protPlayFlag=0;
+        if(!prot_loop_ON)
+        {
+            timer.stop();
+            protPlayPressed();
+        }
+    }
 }
 
 void MainWindow::newFile()
