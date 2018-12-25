@@ -27,6 +27,7 @@ protected:
 #endif // QT_NO_CONTEXTMENU
 
 private slots:
+    void changeDir();
     void changePWMmode();
     void openWithNameHere(QString);
     void set_LEs();

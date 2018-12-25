@@ -20,6 +20,8 @@ bool protPlayOn=0, patternPlayOn=0;
 QPixmap* pixmapPlay;
 QPixmap* pixmapStop;
 QPixmap* pixmapLoop;
+QPixmap* pixmapRight;
+QPixmap* pixmapLeft;
 QPixmap* pixmapLoopStop;
 QString prot_name=QString("untitled.ptcl");
 QString pattern_name=QString("untitled.ptn");
@@ -32,6 +34,7 @@ QPushButton* pattern_play_btn;
 QPushButton* prot_loop_btn;
 QPushButton* linear_mapping_btn;
 QPushButton* config_mapping_btn;
+QPushButton* dir_btn;
 QLineEdit* save_le;
 QLineEdit* open_le;
 QLineEdit* serial_le;
@@ -81,6 +84,7 @@ int prot_ind;
 bool prot_loop_ON=1;
 bool serial_inited=0;
 bool global_PWM_ON=1;
+bool right_dir=1;
 
 int getVibroNum(int i,int j);
 
@@ -122,11 +126,14 @@ MainWindow::MainWindow()
     main_alloc(Nx, Ny);
     resize(vibro_x[Nx-1]+100,270+vibro_y[Ny-1]);
 
+
     linear_mapping_btn=new QPushButton("set linear mapping");
     config_mapping_btn= new QPushButton("set config mapping");
     connect(linear_mapping_btn,SIGNAL(pressed()),this,SLOT(setLinearMapping()));
     connect(config_mapping_btn,SIGNAL(pressed()),this,SLOT(setConfigMapping()));
 
+    pixmapLeft=new QPixmap("arrow-left.png");
+    pixmapRight=new QPixmap("arrow-right.png");
     pixmapLoop= new QPixmap("loop.png");
     pixmapLoopStop= new QPixmap("loop-stop.png");
     pixmapPlay= new QPixmap("play_round1600.png");
@@ -160,6 +167,11 @@ MainWindow::MainWindow()
     protFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     QWidget *patternTopFiller= new QWidget;
     patternTopFiller->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+    QIcon ButtonIcon4(*pixmapRight);
+    dir_btn=new QPushButton("");
+    dir_btn->setIcon(ButtonIcon4);
+    dir_btn->setIconSize(QSize(30,30));
 
     QIcon ButtonIcon2(*pixmapLoop);
     prot_loop_btn=new QPushButton("");
@@ -255,20 +267,23 @@ MainWindow::MainWindow()
 
     protPanelLayout->addWidget(prot_play_btn,0,0,1,1);
     protPanelLayout->addWidget(prot_loop_btn,0,1,1,1);
+    protPanelLayout->addWidget(dir_btn,0,2,1,1);
     auto label3=new QLabel("interval, ms: ");
     auto label5=new QLabel("global PWM:");
+    auto label6=new QLabel("serial num:");
     interval_le=new QLineEdit("300");
     connect(interval_le,SIGNAL(editingFinished()),this,SLOT(set_LEs()));
     //    protPanelLayout->addWidget(label3,0,1);
     //    protPanelLayout->addWidget(interval_le,1,1);
-    protPanelLayout->addWidget(serial_le,1,0,1,2);
+    protPanelLayout->addWidget(label6,1,0,1,1);
+    protPanelLayout->addWidget(serial_le,1,1,1,1);
     protPanelLayout->addWidget(label3,2,0);
     protPanelLayout->addWidget(interval_le,2,1);
     protPanelLayout->addWidget(label5,3,0);
     protPanelLayout->addWidget(global_PWM_le,3,1);
     protPanelLayout->addWidget(PWM_mode_btn,4,0);
 
-    protPanelLayout->addWidget(panelFiller,5,0,1,2);
+    protPanelLayout->addWidget(panelFiller,5,0,1,3);
 
     protPanelGroup->setLayout(protPanelLayout);
     protSequenceGroup->setLayout(protSequenceLayout);
@@ -331,6 +346,7 @@ MainWindow::MainWindow()
 
     setTitle();
 
+    connect(dir_btn,SIGNAL(pressed()),this,SLOT(changeDir()));
     connect(serial_le,SIGNAL(editingFinished()),this,SLOT(COMInit()));
 
     //    setCentralWidget(protWidget);
@@ -349,6 +365,23 @@ MainWindow::MainWindow()
     setMapping();
 }
 
+void MainWindow::changeDir()
+{
+    right_dir=!right_dir;
+    if(right_dir)
+    {
+        QIcon ButtonIcon4(*pixmapRight);
+        //    dir_btn=new QPushButton("");
+        dir_btn->setIcon(ButtonIcon4);
+        //    dir_btn->setIconSize(QSize(30,30));
+    }else
+    {
+        QIcon ButtonIcon4(*pixmapLeft);
+        //        dir_btn=new QPushButton("");
+        dir_btn->setIcon(ButtonIcon4);
+        //        dir_btn->setIconSize(QSize(30,30));
+    }
+}
 
 void MainWindow::set_LEs()
 {
@@ -398,7 +431,10 @@ void MainWindow::protPlayPressed()
     protPlayOn=!protPlayOn;
     if(protPlayOn)
     {
-        prot_ind=0;
+        if(right_dir)
+            prot_ind=0;
+        else
+            prot_ind=prot_N-1;
         timer.start();
         timer.setInterval(interval_le->text().toInt());
         protPlayFlag=true;
@@ -756,16 +792,34 @@ void MainWindow::protocolRoutine()
     port.write("c",1);
 
 
-    prot_ind++;
-    if(prot_ind>(prot_N-1))
-    {
-        prot_ind=0;
 
-        //        protPlayFlag=0;
-        if(!prot_loop_ON)
+    if(right_dir)
+    {
+        prot_ind++;
+        if(prot_ind>(prot_N-1))
         {
-            timer.stop();
-            protPlayPressed();
+            prot_ind=0;
+
+            //        protPlayFlag=0;
+            if(!prot_loop_ON)
+            {
+                timer.stop();
+                protPlayPressed();
+            }
+        }
+    }
+    else
+    {
+        prot_ind--;
+        if(prot_ind<0)
+        {
+            prot_ind=(prot_N-1);
+
+            if(!prot_loop_ON)
+            {
+                timer.stop();
+                protPlayPressed();
+            }
         }
     }
 }
