@@ -30,6 +30,7 @@ void canvasWidget::paintEvent(QPaintEvent *event)
     QPainter* painter=new QPainter(this);
     painter->setRenderHint(QPainter::Antialiasing, true);
 
+
     if(mode==0)
     {
         QRect r=QRect(mouse_p,mouse_p+QPoint(100,100));
@@ -38,6 +39,7 @@ void canvasWidget::paintEvent(QPaintEvent *event)
             {
                 if(checked_n==vibro_n[i][j])
                 {
+                    painter->drawText(QPointF(vibro_x[j]-10,vibro_y[i]+35),QString("n=")+QString::number(checked_n));
                     pen.setWidth(6);
                     pen.setColor(QColor(0,150,0));
                     vibro_rad[checked_n]=vibro_rad_stat*1.15;

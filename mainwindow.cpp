@@ -101,6 +101,11 @@ void main_dealloc(int Nx, int Ny);
 void MainWindow::changePWMmode()
 {
     global_PWM_ON=!global_PWM_ON;
+    if(global_PWM_ON)
+        PWM_mode_btn->setText("global PWM ON");
+    else
+        PWM_mode_btn->setText("global PWM OFF");
+
 }
 
 MainWindow::MainWindow()
@@ -217,7 +222,7 @@ MainWindow::MainWindow()
     auto label4 = new QLabel("   PWM = ");
     PWM_le=new QLineEdit("40");
     global_PWM_le=new QLineEdit("35");
-    connect(PWM_le,SIGNAL(editingFinished()),this,SLOT(patternPlayPressed()));
+    connect(PWM_le,SIGNAL(returnPressed()),this,SLOT(patternPlayPressed()));
     patternLayout->addWidget(label4,0,5);
     patternLayout->addWidget(PWM_le,0,6);
     patternLayout->addWidget(patternTopFiller,0,7);
@@ -232,7 +237,7 @@ MainWindow::MainWindow()
     layout3->addWidget(patternFillerGroup);
     patternWidget->setLayout(layout3);
 
-    connect(global_PWM_le,SIGNAL(editingFinished()),this,SLOT(set_LEs()));
+    connect(global_PWM_le,SIGNAL(returnPressed()),this,SLOT(set_LEs()));
 
     prot_le=new QLineEdit[prot_le_s];
     for(int i=0;i<prot_le_s;i++)
@@ -245,7 +250,7 @@ MainWindow::MainWindow()
 
     protSequenceLayout->addWidget(protFiller);
 
-    PWM_mode_btn=new QPushButton("global PWM");
+    PWM_mode_btn=new QPushButton("global PWM ON");
     connect(PWM_mode_btn,SIGNAL(pressed()),this,SLOT(changePWMmode()));
 
     protPanelLayout->addWidget(prot_play_btn,0,0,1,1);
@@ -405,9 +410,9 @@ void MainWindow::protPlayPressed()
 
         char pwm;
         if(global_PWM_ON)
-             pwm=global_PWM;
+            pwm=global_PWM;
         else
-             pwm=PWM_le->text().toInt();
+            pwm=PWM_le->text().toInt();
         byte b=pwm;
         port.write("a",1);
         port.write(&pwm,1);
@@ -447,9 +452,9 @@ void MainWindow::oneSend()
         {
             char pwm;
             if(global_PWM_ON)
-                 pwm=global_PWM;
+                pwm=global_PWM;
             else
-                 pwm=PWM_le->text().toInt();
+                pwm=PWM_le->text().toInt();
             byte b=pwm;
             port.write("a",1);
             port.write(&pwm,1);
@@ -732,9 +737,9 @@ void MainWindow::protocolRoutine()
 
     char pwm;
     if(global_PWM_ON)
-         pwm=global_PWM;
+        pwm=global_PWM;
     else
-         pwm=PWM_le->text().toInt();
+        pwm=PWM_le->text().toInt();
     port.write("a",1);
     port.write(&pwm,1);
 
@@ -874,7 +879,7 @@ void MainWindow::about()
                    "    О состоянии подключения оповестит строка подсказок\n"
                    "    Возможно сохранение как паттерна, так и протокола в отдельности\n"
                    "в зависимости от запущенного режима\n"
-                   "    Значение PWM - целое число в пределах от 0 до 20,"
+                   "    Значение PWM - целое число в пределах от 0 до 40,"
                    "применяется для всего паттерна целиком"));
     msb.exec();
 }
