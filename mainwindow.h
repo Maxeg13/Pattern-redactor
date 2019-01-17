@@ -1,6 +1,6 @@
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#ifndef StimulatorMainWindow_H
+#define StimulatorMainWindow_H
 
 #include "serial.h"
 #include <QMainWindow>
@@ -10,13 +10,13 @@ class QActionGroup;
 class QLabel;
 class QMenu;
 
-class MainWindow : public QMainWindow
+class StimulatorMainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
     Serial* hSerial;
-    MainWindow();
+    StimulatorMainWindow();
     void setTitle();
     void setMapping();
 
@@ -29,7 +29,7 @@ protected:
 private slots:
     void changeDir();
     void changePWMmode();
-    void openWithNameHere(QString);
+    void openFileHere(QString);
     void set_LEs();
     void oneSend();
     void setLinearMapping();
@@ -48,8 +48,8 @@ private slots:
     void save();
     void save11();
     void saveWithName();
-    void openWithName();
-    void openWithName(QString s);
+    void openFile();
+    void openFile(QString s);
     void saveAs();
     void print();
     void undo();

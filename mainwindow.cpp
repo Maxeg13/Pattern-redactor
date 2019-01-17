@@ -1,10 +1,10 @@
-//http://doc.qt.io/qt-5/qtwidgets-mainwindows-menus-example.html
+//http://doc.qt.io/qt-5/qtwidgets-StimulatorMainWindows-menus-example.html
 //names: prot (protocol) vs stimulator
 //forbit to open inappropriate extensions
 //editor
 #include <QtWidgets>
 #include "canvaswidget.h"
-#include "mainwindow.h"
+#include "MainWindow.h"
 #include <QDebug>
 #include <QFile>
 #include <QtSerialPort>
@@ -102,7 +102,7 @@ void main_alloc(int Nx, int Ny);
 
 void main_dealloc(int Nx, int Ny);
 
-void MainWindow::changePWMmode()
+void StimulatorMainWindow::changePWMmode()
 {
     global_PWM_ON=!global_PWM_ON;
     if(global_PWM_ON)
@@ -112,7 +112,7 @@ void MainWindow::changePWMmode()
 
 }
 
-MainWindow::MainWindow()
+StimulatorMainWindow::StimulatorMainWindow()
 {
     mode=1;
 
@@ -320,7 +320,7 @@ MainWindow::MainWindow()
     save_OK_btn=new QPushButton("save");
     connect(save_OK_btn,SIGNAL(released()),this,SLOT(saveWithName()));
     open_OK_btn=new QPushButton("open");
-    connect(open_OK_btn,SIGNAL(released()),this,SLOT(openWithName()));
+    connect(open_OK_btn,SIGNAL(released()),this,SLOT(openFile()));
 
 
     /////////
@@ -360,12 +360,12 @@ MainWindow::MainWindow()
     timer.setInterval(800);
     connect(&timer,SIGNAL(timeout()),this,SLOT(protocolRoutine()));
 
-    openWithName(pattern_name);
-    openWithName();
+    openFile(pattern_name);
+    openFile();
     setMapping();
 }
 
-void MainWindow::changeDir()
+void StimulatorMainWindow::changeDir()
 {
     right_dir=!right_dir;
     if(right_dir)
@@ -383,13 +383,13 @@ void MainWindow::changeDir()
     }
 }
 
-void MainWindow::set_LEs()
+void StimulatorMainWindow::set_LEs()
 {
     timer.setInterval(interval_le->text().toInt());
     global_PWM=global_PWM_le->text().toInt();
 }
 
-void MainWindow::COMInit()
+void StimulatorMainWindow::COMInit()
 {
     serial_inited=1;
     qstr=serial_le->text();
@@ -415,7 +415,7 @@ void MainWindow::COMInit()
     serial_le->setDisabled(true);
 }
 
-void MainWindow::loopChanged()
+void StimulatorMainWindow::loopChanged()
 {
     prot_loop_ON=!prot_loop_ON;
     QIcon ButtonIcon(prot_loop_ON?(*pixmapLoop):(*pixmapLoopStop));
@@ -423,7 +423,7 @@ void MainWindow::loopChanged()
     prot_loop_btn->setIcon(ButtonIcon);
 }
 
-void MainWindow::protPlayPressed()
+void StimulatorMainWindow::protPlayPressed()
 {
     if(!serial_inited)
         COMInit();
@@ -481,7 +481,7 @@ void MainWindow::protPlayPressed()
 //    }
 //port.write("c",1);
 
-void MainWindow::oneSend()
+void StimulatorMainWindow::oneSend()
 {
     if(serial_inited)
         if(patternPlayOn)
@@ -516,7 +516,7 @@ void MainWindow::oneSend()
 
 }
 
-void MainWindow::patternPlayPressed()
+void StimulatorMainWindow::patternPlayPressed()
 {
     if(!serial_inited)
         COMInit();
@@ -533,7 +533,7 @@ void MainWindow::patternPlayPressed()
 }
 
 #ifndef QT_NO_CONTEXTMENU
-void MainWindow::contextMenuEvent(QContextMenuEvent *event)
+void StimulatorMainWindow::contextMenuEvent(QContextMenuEvent *event)
 {
     QMenu menu(this);
     menu.addAction(cutAct);
@@ -543,7 +543,7 @@ void MainWindow::contextMenuEvent(QContextMenuEvent *event)
 }
 #endif // QT_NO_CONTEXTMENU
 
-void MainWindow::saveAs()
+void StimulatorMainWindow::saveAs()
 {
     infoLabel->setText(tr("Invoked <b>File|Save</b>"));
     qDebug()<<prot_name;
@@ -556,15 +556,15 @@ void MainWindow::saveAs()
     saveWindow->show();
 }
 
-void MainWindow::openWithNameHere(QString s)//pattern
+void StimulatorMainWindow::openFileHere(QString s)//pattern
 {
     pattern_name=s;
     save_le->setText(pattern_name);
     setTitle();
-    openWithName(s);
+    openFile(s);
 }
 
-void MainWindow::openWithName(QString s)//pattern
+void StimulatorMainWindow::openFile(QString s)//pattern
 {
     int nx, ny;
     QFile inputFile(s);
@@ -621,7 +621,7 @@ void MainWindow::openWithName(QString s)//pattern
     }
 }
 
-void MainWindow::openWithName()
+void StimulatorMainWindow::openFile()
 {
 
     QFile inputFile(open_le->text());
@@ -632,7 +632,7 @@ void MainWindow::openWithName()
             pattern_name=open_le->text();
             save_le->setText(pattern_name);
             setTitle();
-            openWithName(pattern_name);
+            openFile(pattern_name);
             //            patternFiller->update();
         }
         else
@@ -668,7 +668,7 @@ void MainWindow::openWithName()
     setTitle();
 }
 
-void MainWindow::save()
+void StimulatorMainWindow::save()
 {
     if(mode==0)
         save_le->setText(pattern_name);
@@ -678,7 +678,7 @@ void MainWindow::save()
 
 }
 
-void MainWindow::saveWithName()
+void StimulatorMainWindow::saveWithName()
 {
     if(mode==0)
     {
@@ -726,7 +726,7 @@ void MainWindow::saveWithName()
 
 
 
-void MainWindow::updateProtocol()
+void StimulatorMainWindow::updateProtocol()
 {
     for(int i=0;i<prot_le_s;i++)
     {
@@ -747,7 +747,7 @@ void MainWindow::updateProtocol()
     }
 }
 
-void MainWindow::changeDim()
+void StimulatorMainWindow::changeDim()
 {
 
     main_dealloc(Nx,Ny);
@@ -759,11 +759,11 @@ void MainWindow::changeDim()
     patternFiller->update();
 }
 
-void MainWindow::protocolRoutine()
+void StimulatorMainWindow::protocolRoutine()
 {
 
 
-    openWithName(prot_le[prot_ind].text());
+    openFile(prot_le[prot_ind].text());
     setTitle();
     patternFiller->update();
 
@@ -824,13 +824,13 @@ void MainWindow::protocolRoutine()
     }
 }
 
-void MainWindow::newFile()
+void StimulatorMainWindow::newFile()
 {
     infoLabel->setText(tr("Invoked <b>File|New</b>"));
 
 }
 
-void MainWindow::open()
+void StimulatorMainWindow::open()
 {
     if(mode)
         open_le->setText(prot_name);
@@ -841,84 +841,84 @@ void MainWindow::open()
 
 }
 
-void MainWindow::save11()
+void StimulatorMainWindow::save11()
 {
     infoLabel->setText(tr("Invoked <b>File|Save</b>"));
 }
 
 
 
-void MainWindow::print()
+void StimulatorMainWindow::print()
 {
     infoLabel->setText(tr("Invoked <b>File|Print</b>"));
 }
 
-void MainWindow::undo()
+void StimulatorMainWindow::undo()
 {
     infoLabel->setText(tr("Invoked <b>Edit|Undo</b>"));
 }
 
-void MainWindow::redo()
+void StimulatorMainWindow::redo()
 {
     infoLabel->setText(tr("Invoked <b>Edit|Redo</b>"));
 }
 
-void MainWindow::cut()
+void StimulatorMainWindow::cut()
 {
     infoLabel->setText(tr("Invoked <b>Edit|Cut</b>"));
 }
 
-void MainWindow::copy()
+void StimulatorMainWindow::copy()
 {
     infoLabel->setText(tr("Invoked <b>Edit|Copy</b>"));
 }
 
-void MainWindow::paste()
+void StimulatorMainWindow::paste()
 {
     infoLabel->setText(tr("Invoked <b>Edit|Paste</b>"));
 }
 
-void MainWindow::bold()
+void StimulatorMainWindow::bold()
 {
     infoLabel->setText(tr("Invoked <b>Edit|Format|Bold</b>"));
 }
 
-void MainWindow::italic()
+void StimulatorMainWindow::italic()
 {
     infoLabel->setText(tr("Invoked <b>Edit|Format|Italic</b>"));
 }
 
-void MainWindow::leftAlign()
+void StimulatorMainWindow::leftAlign()
 {
     infoLabel->setText(tr("Invoked <b>Edit|Format|Left Align</b>"));
 }
 
-void MainWindow::rightAlign()
+void StimulatorMainWindow::rightAlign()
 {
     infoLabel->setText(tr("<i>Invoked  </i><b>Edit|Format|Right Align</b>"));
 }
 
-void MainWindow::justify()
+void StimulatorMainWindow::justify()
 {
     infoLabel->setText(tr("Invoked <b>Edit|Format|Justify</b>"));
 }
 
-void MainWindow::center()
+void StimulatorMainWindow::center()
 {
     infoLabel->setText(tr("Invoked <b>Edit|Format|Center</b>"));
 }
 
-void MainWindow::setLineSpacing()
+void StimulatorMainWindow::setLineSpacing()
 {
     infoLabel->setText(tr("Invoked <b>Edit|Format|Set Line Spacing</b>"));
 }
 
-void MainWindow::setParagraphSpacing()
+void StimulatorMainWindow::setParagraphSpacing()
 {
     infoLabel->setText(tr("Invoked <b>Edit|Format|Set Paragraph Spacing</b>"));
 }
 
-void MainWindow::about()
+void StimulatorMainWindow::about()
 {
     infoLabel->setText(tr("Invoked <b>Help|About</b>"));
     //    QMessageBox::about(this, tr("About Menu"),
@@ -938,12 +938,12 @@ void MainWindow::about()
     msb.exec();
 }
 
-void MainWindow::aboutQt()
+void StimulatorMainWindow::aboutQt()
 {
     infoLabel->setText(tr("Invoked <b>Help|About Qt</b>"));
 }
 
-void MainWindow::setMapping()
+void StimulatorMainWindow::setMapping()
 {
     QFile inputFile("mapping_config");
     if (inputFile.open(QIODevice::ReadOnly))
@@ -969,37 +969,37 @@ void MainWindow::setMapping()
 }
 
 
-void MainWindow::createActions()
+void StimulatorMainWindow::createActions()
 {
     newAct = new QAction(tr("&New"), this);
     newAct->setShortcuts(QKeySequence::New);
     newAct->setStatusTip(tr("Create a new file"));
-    connect(newAct, &QAction::triggered, this, &MainWindow::newFile);
+    connect(newAct, &QAction::triggered, this, &StimulatorMainWindow::newFile);
 
     openAct = new QAction(tr("&Open..."), this);
     openAct->setShortcuts(QKeySequence::Open);
     openAct->setStatusTip(tr("Open an existing file"));
-    connect(openAct, &QAction::triggered, this, &MainWindow::open);
+    connect(openAct, &QAction::triggered, this, &StimulatorMainWindow::open);
 
     saveAct = new QAction(tr("&Save"), this);
     saveAct->setShortcuts(QKeySequence::Save);
     saveAct->setStatusTip(tr("Save the pattern"));
-    connect(saveAct, &QAction::triggered, this, &MainWindow::save);
+    connect(saveAct, &QAction::triggered, this, &StimulatorMainWindow::save);
 
 
     saveAsAct = new QAction(tr("&Save as ..."), this);
     //    saveAsAct->setShortcuts(QKeySequence::Save);
     saveAsAct->setStatusTip(tr("name the pattern to save"));
-    connect(saveAsAct, &QAction::triggered, this, &MainWindow::saveAs);
+    connect(saveAsAct, &QAction::triggered, this, &StimulatorMainWindow::saveAs);
 
     editorAct = new QAction(tr("&editor mode"), this);
     editorAct->setCheckable(true);
-    connect( editorAct, &QAction::triggered, this,&MainWindow::editorChecked);
+    connect( editorAct, &QAction::triggered, this,&StimulatorMainWindow::editorChecked);
 
     protAct = new QAction(tr("protocol mode"),this);
     protAct->setCheckable(true);
     protAct->setChecked(true);
-    connect( protAct, &QAction::triggered, this,&MainWindow::protChecked);
+    connect( protAct, &QAction::triggered, this,&StimulatorMainWindow::protChecked);
 
     exitAct = new QAction(tr("E&xit"), this);
     exitAct->setShortcuts(QKeySequence::Quit);
@@ -1009,36 +1009,36 @@ void MainWindow::createActions()
     undoAct = new QAction(tr("&Undo"), this);
     undoAct->setShortcuts(QKeySequence::Undo);
     undoAct->setStatusTip(tr("Undo the last operation"));
-    connect(undoAct, &QAction::triggered, this, &MainWindow::undo);
+    connect(undoAct, &QAction::triggered, this, &StimulatorMainWindow::undo);
 
     redoAct = new QAction(tr("&Redo"), this);
     redoAct->setShortcuts(QKeySequence::Redo);
     redoAct->setStatusTip(tr("Redo the last operation"));
-    connect(redoAct, &QAction::triggered, this, &MainWindow::redo);
+    connect(redoAct, &QAction::triggered, this, &StimulatorMainWindow::redo);
 
     cutAct = new QAction(tr("Cu&t"), this);
     cutAct->setShortcuts(QKeySequence::Cut);
     cutAct->setStatusTip(tr("Cut the current selection's contents to the "
                             "clipboard"));
-    connect(cutAct, &QAction::triggered, this, &MainWindow::cut);
+    connect(cutAct, &QAction::triggered, this, &StimulatorMainWindow::cut);
 
     copyAct = new QAction(tr("&Copy"), this);
     copyAct->setShortcuts(QKeySequence::Copy);
     copyAct->setStatusTip(tr("Copy the current selection's contents to the "
                              "clipboard"));
-    connect(copyAct, &QAction::triggered, this, &MainWindow::copy);
+    connect(copyAct, &QAction::triggered, this, &StimulatorMainWindow::copy);
 
     pasteAct = new QAction(tr("&Paste"), this);
     pasteAct->setShortcuts(QKeySequence::Paste);
     pasteAct->setStatusTip(tr("Paste the clipboard's contents into the current "
                               "selection"));
-    connect(pasteAct, &QAction::triggered, this, &MainWindow::paste);
+    connect(pasteAct, &QAction::triggered, this, &StimulatorMainWindow::paste);
 
     boldAct = new QAction(tr("&Bold"), this);
     boldAct->setCheckable(true);
     boldAct->setShortcut(QKeySequence::Bold);
     boldAct->setStatusTip(tr("Make the text bold"));
-    connect(boldAct, &QAction::triggered, this, &MainWindow::bold);
+    connect(boldAct, &QAction::triggered, this, &StimulatorMainWindow::bold);
 
     QFont boldFont = boldAct->font();
     boldFont.setBold(true);
@@ -1048,7 +1048,7 @@ void MainWindow::createActions()
     italicAct->setCheckable(true);
     italicAct->setShortcut(QKeySequence::Italic);
     italicAct->setStatusTip(tr("Make the text italic"));
-    connect(italicAct, &QAction::triggered, this, &MainWindow::italic);
+    connect(italicAct, &QAction::triggered, this, &StimulatorMainWindow::italic);
 
     QFont italicFont = italicAct->font();
     italicFont.setItalic(true);
@@ -1057,45 +1057,45 @@ void MainWindow::createActions()
     setLineSpacingAct = new QAction(tr("Set &Line Spacing..."), this);
     setLineSpacingAct->setStatusTip(tr("Change the gap between the lines of a "
                                        "paragraph"));
-    connect(setLineSpacingAct, &QAction::triggered, this, &MainWindow::setLineSpacing);
+    connect(setLineSpacingAct, &QAction::triggered, this, &StimulatorMainWindow::setLineSpacing);
 
     setParagraphSpacingAct = new QAction(tr("Set &Paragraph Spacing..."), this);
     setParagraphSpacingAct->setStatusTip(tr("Change the gap between paragraphs"));
     connect(setParagraphSpacingAct, &QAction::triggered,
-            this, &MainWindow::setParagraphSpacing);
+            this, &StimulatorMainWindow::setParagraphSpacing);
 
     aboutAct = new QAction(tr("&About"), this);
     aboutAct->setStatusTip(tr("Show the application's About box"));
-    connect(aboutAct, &QAction::triggered, this, &MainWindow::about);
+    connect(aboutAct, &QAction::triggered, this, &StimulatorMainWindow::about);
 
     aboutQtAct = new QAction(tr("About &Qt"), this);
     aboutQtAct->setStatusTip(tr("Show the Qt library's About box"));
     connect(aboutQtAct, &QAction::triggered, qApp, &QApplication::aboutQt);
-    connect(aboutQtAct, &QAction::triggered, this, &MainWindow::aboutQt);
+    connect(aboutQtAct, &QAction::triggered, this, &StimulatorMainWindow::aboutQt);
 
     leftAlignAct = new QAction(tr("&Left Align"), this);
     leftAlignAct->setCheckable(true);
     leftAlignAct->setShortcut(tr("Ctrl+L"));
     leftAlignAct->setStatusTip(tr("Left align the selected text"));
-    connect(leftAlignAct, &QAction::triggered, this, &MainWindow::leftAlign);
+    connect(leftAlignAct, &QAction::triggered, this, &StimulatorMainWindow::leftAlign);
 
     rightAlignAct = new QAction(tr("&Right Align"), this);
     rightAlignAct->setCheckable(true);
     rightAlignAct->setShortcut(tr("Ctrl+R"));
     rightAlignAct->setStatusTip(tr("Right align the selected text"));
-    connect(rightAlignAct, &QAction::triggered, this, &MainWindow::rightAlign);
+    connect(rightAlignAct, &QAction::triggered, this, &StimulatorMainWindow::rightAlign);
 
     justifyAct = new QAction(tr("&Justify"), this);
     justifyAct->setCheckable(true);
     justifyAct->setShortcut(tr("Ctrl+J"));
     justifyAct->setStatusTip(tr("Justify the selected text"));
-    connect(justifyAct, &QAction::triggered, this, &MainWindow::justify);
+    connect(justifyAct, &QAction::triggered, this, &StimulatorMainWindow::justify);
 
     centerAct = new QAction(tr("&Center"), this);
     centerAct->setCheckable(true);
     centerAct->setShortcut(tr("Ctrl+E"));
     centerAct->setStatusTip(tr("Center the selected text"));
-    connect(centerAct, &QAction::triggered, this, &MainWindow::center);
+    connect(centerAct, &QAction::triggered, this, &StimulatorMainWindow::center);
 
     alignmentGroup = new QActionGroup(this);
     alignmentGroup->addAction(leftAlignAct);
@@ -1105,20 +1105,20 @@ void MainWindow::createActions()
     leftAlignAct->setChecked(true);
 }
 
-void MainWindow::setLinearMapping()
+void StimulatorMainWindow::setLinearMapping()
 {
     for(int i=0;i<Nx*Ny;i++)
         vib_from_s[i]=i;
 }
 
-void MainWindow::setConfigMapping()
+void StimulatorMainWindow::setConfigMapping()
 {
     setMapping();
 }
 
 
 
-void MainWindow::editorChecked()
+void StimulatorMainWindow::editorChecked()
 {
     if(mode==1)//change
     {
@@ -1139,7 +1139,7 @@ void MainWindow::editorChecked()
     setTitle();
 }
 
-void MainWindow::protChecked()
+void StimulatorMainWindow::protChecked()
 {
     if(mode==0)
     {
@@ -1160,7 +1160,7 @@ void MainWindow::protChecked()
     setTitle();
 }
 
-void MainWindow::setTitle()
+void StimulatorMainWindow::setTitle()
 {
 
     QString hm=mode?QString("protocol   "):QString("ptnEdit   ");
@@ -1169,7 +1169,7 @@ void MainWindow::setTitle()
     //    setWindowTitle(tr("<b>hello</b>"));
 }
 
-void MainWindow::createMenus()
+void StimulatorMainWindow::createMenus()
 {
     fileMenu = menuBar()->addMenu(tr("&File"));
     fileMenu->addAction(newAct);
