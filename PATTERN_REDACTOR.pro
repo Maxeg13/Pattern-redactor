@@ -28,12 +28,9 @@ SOURCES += \
         main.cpp \
         mainwindow.cpp \
     serial.cpp \
-    stdafx.cpp \
     canvaswidget.cpp
 
 HEADERS += \
         mainwindow.h \
     serial.h \
-    stdafx.h \
-    targetver.h \
     canvaswidget.h
