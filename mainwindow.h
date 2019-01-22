@@ -2,7 +2,7 @@
 #ifndef StimulatorMainWindow_H
 #define StimulatorMainWindow_H
 
-#include "serial.h"
+#include "udp_receiver.h"
 #include <QMainWindow>
 
 class QAction;
@@ -14,12 +14,11 @@ class StimulatorMainWindow : public QMainWindow
 {
     Q_OBJECT
 
-public:
-    Serial* hSerial;
+public: 
     StimulatorMainWindow();
     void setTitle();
     void setMapping();
-
+    void setPattern();
 
 protected:
 #ifndef QT_NO_CONTEXTMENU
@@ -27,6 +26,8 @@ protected:
 #endif // QT_NO_CONTEXTMENU
 
 private slots:
+
+    void getRemoteSig(uint8_t);
     void changeDir();
     void changePWMmode();
     void openFileHere(QString);

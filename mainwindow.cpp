@@ -56,6 +56,7 @@ QSerialPort port;
 QTimer timer;
 //Serial* hSerial;
 QString qstr;
+UDP_Receiver* REC;
 
 bool protPlayFlag;
 bool mode;//0-editor mode, 1-prot?
@@ -118,6 +119,9 @@ StimulatorMainWindow::StimulatorMainWindow()
 
     Nx=8;
     Ny=2;
+
+    REC=new UDP_Receiver();
+    connect(REC,SIGNAL(sig_out(uint8_t)),this,SLOT(getRemoteSig(uint8_t)));
 
     //    main_alloc(Nx, Ny);
     //    main_dealloc(Nx, Ny);
@@ -363,6 +367,45 @@ StimulatorMainWindow::StimulatorMainWindow()
     openFile(pattern_name);
     openFile();
     setMapping();
+}
+
+void StimulatorMainWindow::setPattern()
+{
+    openFile(prot_le[prot_ind].text());
+    setTitle();
+    patternFiller->update();
+
+
+
+    prot_le[prot_ind].setPalette(QPalette(QColor(255,0,0)));
+
+    char pwm;
+    if(global_PWM_ON)
+        pwm=global_PWM;
+    else
+        pwm=PWM_le->text().toInt();
+    port.write("a",1);
+    port.write(&pwm,1);
+
+    for(int s=0;s<Nx*Ny;s++)
+        switch(vibro_state[vib_from_s[s]])
+        {
+        case 0:
+            port.write("d",1);
+            break;
+        case 1:
+            port.write("s",1);
+            break;
+        }
+    port.write("c",1);
+}
+
+void StimulatorMainWindow::getRemoteSig(uint8_t _ind)
+{
+    qDebug()<<"hi!";
+    prot_ind=_ind;
+
+    setPattern();
 }
 
 void StimulatorMainWindow::changeDir()
@@ -761,37 +804,7 @@ void StimulatorMainWindow::changeDim()
 
 void StimulatorMainWindow::protocolRoutine()
 {
-
-
-    openFile(prot_le[prot_ind].text());
-    setTitle();
-    patternFiller->update();
-
-
-
-    prot_le[prot_ind].setPalette(QPalette(QColor(255,0,0)));
-
-    char pwm;
-    if(global_PWM_ON)
-        pwm=global_PWM;
-    else
-        pwm=PWM_le->text().toInt();
-    port.write("a",1);
-    port.write(&pwm,1);
-
-    for(int s=0;s<Nx*Ny;s++)
-        switch(vibro_state[vib_from_s[s]])
-        {
-        case 0:
-            port.write("d",1);
-            break;
-        case 1:
-            port.write("s",1);
-            break;
-        }
-    port.write("c",1);
-
-
+    setPattern();
 
     if(right_dir)
     {

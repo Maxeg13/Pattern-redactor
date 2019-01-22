@@ -6,6 +6,7 @@
 
 #QT       += core gui
 QT += serialport
+QT += network widgets
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -29,10 +30,10 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
-    serial.cpp \
-    canvaswidget.cpp
+    canvaswidget.cpp \
+    udp_receiver.cpp
 
 HEADERS += \
         mainwindow.h \
-    serial.h \
-    canvaswidget.h
+    canvaswidget.h \
+    udp_receiver.h
