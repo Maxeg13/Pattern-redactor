@@ -9,8 +9,10 @@ QT += serialport
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = STIMULATOR
+TARGET = MultiChanStimulus
 TEMPLATE = app
+
+RC_FILE = myapp.rc
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which has been marked as deprecated (the exact warnings
