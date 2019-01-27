@@ -52,22 +52,10 @@ private slots:
     void openFile();
     void openFile(QString s);
     void saveAs();
-    void print();
-    void undo();
-    void redo();
-    void cut();
-    void copy();
-    void paste();
-    void bold();
-    void italic();
-    void leftAlign();
-    void rightAlign();
-    void justify();
-    void center();
     void setLineSpacing();
     void setParagraphSpacing();
     void about();
-    void aboutQt();
+
 
 private:
     void createActions();
@@ -84,25 +72,12 @@ private:
     QAction *openAct;
     QAction *saveAsAct;
     QAction *saveAct;
-    QAction *printAct;
     QAction *protAct;
     QAction *editorAct;
     QAction *exitAct;
-    QAction *undoAct;
-    QAction *redoAct;
-    QAction *cutAct;
-    QAction *copyAct;
-    QAction *pasteAct;
-    QAction *boldAct;
-    QAction *italicAct;
-    QAction *leftAlignAct;
-    QAction *rightAlignAct;
-    QAction *justifyAct;
-    QAction *centerAct;
     QAction *setLineSpacingAct;
     QAction *setParagraphSpacingAct;
     QAction *aboutAct;
-    QAction *aboutQtAct;
     QLabel *infoLabel;
 };
 

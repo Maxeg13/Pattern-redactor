@@ -13,9 +13,7 @@
 #include <QTimer>
 
 
-
 QStackedWidget* stackedWidget;
-
 bool protPlayOn=0, patternPlayOn=0;
 QPixmap* pixmapPlay;
 QPixmap* pixmapStop;
@@ -54,7 +52,6 @@ QGridLayout *protCentralLayout;
 canvasWidget* patternFiller;
 QSerialPort port;
 QTimer timer;
-//Serial* hSerial;
 QString qstr;
 UDP_Receiver* REC;
 
@@ -123,9 +120,6 @@ StimulatorMainWindow::StimulatorMainWindow()
     REC=new UDP_Receiver();
     connect(REC,SIGNAL(sig_out(uint8_t)),this,SLOT(getRemoteSig(uint8_t)));
 
-    //    main_alloc(Nx, Ny);
-    //    main_dealloc(Nx, Ny);
-
 
     main_alloc(Nx, Ny);
     resize(vibro_x[Nx-1]+100,270+vibro_y[Ny-1]);
@@ -152,8 +146,6 @@ StimulatorMainWindow::StimulatorMainWindow()
     patternCentralLayout=new QGridLayout();
     protCentralLayout=new QGridLayout();
 
-
-
     QWidget *panelFiller = new QWidget;
     panelFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
@@ -165,7 +157,6 @@ StimulatorMainWindow::StimulatorMainWindow()
     infoLabel = new QLabel(tr("<i>Choose a menu option, or right-click to "
                               "invoke a context menu</i>"));
     infoLabel->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
-    infoLabel->setAlignment(Qt::AlignCenter);
 
     QWidget *protFiller = new QWidget;
     protFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -199,12 +190,8 @@ StimulatorMainWindow::StimulatorMainWindow()
     pattern_play_btn->setIconSize(QSize(30,30));
     pattern_play_btn->setMaximumWidth(40);
 
-
     connect(prot_play_btn,SIGNAL(pressed()),this,SLOT(protPlayPressed()));
     connect(pattern_play_btn,SIGNAL(pressed()),this,SLOT(patternPlayPressed()));
-
-    //    layout->setMargin(5);
-    //    layout->addWidget(protFiller,0,0);
 
     auto protSequenceGroup=new QGroupBox("protocol sequence");
     auto protPanelGroup=new QGroupBox("settings and control");
@@ -215,7 +202,6 @@ StimulatorMainWindow::StimulatorMainWindow()
     auto patternFillerGroup = new QGroupBox("pattern:");
     auto patternLayout = new QGridLayout;
 
-    //    protSequenceGroup->setMaximumWidth(200);
     protPanelGroup->setMinimumWidth(200);
 
     Nx_le=new QLineEdit(QString::number(Nx));
@@ -277,8 +263,6 @@ StimulatorMainWindow::StimulatorMainWindow()
     auto label6=new QLabel("serial num:");
     interval_le=new QLineEdit("300");
     connect(interval_le,SIGNAL(editingFinished()),this,SLOT(set_LEs()));
-    //    protPanelLayout->addWidget(label3,0,1);
-    //    protPanelLayout->addWidget(interval_le,1,1);
     protPanelLayout->addWidget(label6,1,0,1,1);
     protPanelLayout->addWidget(serial_le,1,1,1,1);
     protPanelLayout->addWidget(label3,2,0);
@@ -295,26 +279,20 @@ StimulatorMainWindow::StimulatorMainWindow()
 
     layout11->addWidget(protSequenceGroup,0,0);
     layout11->addWidget(protPanelGroup,0,1);
-    //    layout->addWidget(infoLabel,1,0);
-    //    layout->setRowMinimumHeight(1,500);
 
-    //layout->addWidget(bottomFiller,2,0);
     protWidget->setLayout(layout11);
 
     createActions();
     createMenus();
 
-    QString message = tr("Строка подсказок ЗДЕСЬ");
+    QString message = tr("Prompt line is here");
     statusBar()->showMessage(message);
 
-    //    setWindowTitle(tr("Pattern Editor"));
     setMinimumSize(480, 450);
-    //    resize(480, 460);
 
     QPalette Pal(palette());
 
     Pal.setColor(QPalette::Background, Qt::white);
-    //    setAutoFillBackground(true);
     setPalette(Pal);
 
     //popup windows
@@ -336,7 +314,6 @@ StimulatorMainWindow::StimulatorMainWindow()
     central1->setLayout(layout1);
     saveWindow->setCentralWidget(central1);
 
-    //    save_open_le=new QLineEdit("untitled.ptcl");
     auto central2 = new QWidget;
     openWindow=new QMainWindow();
     QGridLayout *layout2 = new QGridLayout;
@@ -346,18 +323,13 @@ StimulatorMainWindow::StimulatorMainWindow()
     openWindow->setCentralWidget(central2);
 
 
-    //    save_open_le->setText(prot_name);
-
     setTitle();
 
     connect(dir_btn,SIGNAL(pressed()),this,SLOT(changeDir()));
     connect(serial_le,SIGNAL(editingFinished()),this,SLOT(COMInit()));
 
-    //    setCentralWidget(protWidget);
-    //    setCentralWidget(patternWidget);
     setCentralWidget(stackedWidget);
     stackedWidget->setCurrentIndex(1);
-    //    setCentralWidget(patternWidget);
 
     patternFiller->update();
 
@@ -401,10 +373,8 @@ void StimulatorMainWindow::setPattern()
 }
 
 void StimulatorMainWindow::getRemoteSig(uint8_t _ind)
-{
-    qDebug()<<"hi!";
+{ 
     prot_ind=_ind;
-
     setPattern();
 }
 
@@ -414,15 +384,11 @@ void StimulatorMainWindow::changeDir()
     if(right_dir)
     {
         QIcon ButtonIcon4(*pixmapRight);
-        //    dir_btn=new QPushButton("");
         dir_btn->setIcon(ButtonIcon4);
-        //    dir_btn->setIconSize(QSize(30,30));
     }else
     {
         QIcon ButtonIcon4(*pixmapLeft);
-        //        dir_btn=new QPushButton("");
         dir_btn->setIcon(ButtonIcon4);
-        //        dir_btn->setIconSize(QSize(30,30));
     }
 }
 
@@ -438,8 +404,6 @@ void StimulatorMainWindow::COMInit()
     qstr=serial_le->text();
     std::string str1=qstr.toUtf8().constData();
     std::wstring str(str1.begin(),str1.end());
-    //    hSerial=new Serial;
-    //    port=new QSerialPort;
     port.setPortName(qstr);
     port.setBaudRate(38400);
     if(port.open(QIODevice::WriteOnly))
@@ -453,8 +417,6 @@ void StimulatorMainWindow::COMInit()
         statusBar()->showMessage(message);
     }
 
-
-    //    hSerial->InitCOM(str.c_str());//was L"COM5"
     serial_le->setDisabled(true);
 }
 
@@ -483,8 +445,7 @@ void StimulatorMainWindow::protPlayPressed()
         protPlayFlag=true;
     }
     else
-    {
-        //        qDebug()<<"hello";
+    {      
         timer.stop();
 
         char pwm;
@@ -507,22 +468,6 @@ void StimulatorMainWindow::protPlayPressed()
     prot_play_btn->setMaximumWidth(40);
 }
 
-
-//char pwm=PWM_le->text().toInt();
-//byte b=pwm;
-//port.write("a",1);
-//port.write(&pwm,1);
-//for(int s=0;s<Nx*Ny;s++)
-//    switch(vibro_state[vib_from_s[s]])
-//    {
-//    case 0:
-//        port.write("d",1);
-//        break;
-//    case 1:
-//        port.write("s",1);
-//        break;
-//    }
-//port.write("c",1);
 
 void StimulatorMainWindow::oneSend()
 {
@@ -579,9 +524,6 @@ void StimulatorMainWindow::patternPlayPressed()
 void StimulatorMainWindow::contextMenuEvent(QContextMenuEvent *event)
 {
     QMenu menu(this);
-    menu.addAction(cutAct);
-    menu.addAction(copyAct);
-    menu.addAction(pasteAct);
     menu.exec(event->globalPos());
 }
 #endif // QT_NO_CONTEXTMENU
@@ -594,8 +536,7 @@ void StimulatorMainWindow::saveAs()
     if(mode)
         save_le->setText(prot_name);
     else
-        save_le->setText(pattern_name);
-    //    qDebug()<<save_open_le->text();
+        save_le->setText(pattern_name);   
     saveWindow->show();
 }
 
@@ -640,19 +581,19 @@ void StimulatorMainWindow::openFile(QString s)//pattern
 
         if((nx==Nx)&&(ny==Ny))
         {
-            //            qDebug()<<"all is nice";
+
         }
         else
             changeDim();
-        //        qDebug()<<strs.size();
+
         for(int i=1;i<strs.size();i++)
         {
             QStringList s_list=strs[i].split("   ");
 
-            //            qDebug()<<"\n";
+
             for(int j=0;j<nx;j++)
             {
-                //                qDebug()<<s_list[j];
+
                 vibro_state[vibro_n[i-1][j]]=s_list[j].toInt();
             }
         }
@@ -666,7 +607,6 @@ void StimulatorMainWindow::openFile(QString s)//pattern
 
 void StimulatorMainWindow::openFile()
 {
-
     QFile inputFile(open_le->text());
     if (inputFile.open(QIODevice::ReadOnly))
     {
@@ -675,8 +615,7 @@ void StimulatorMainWindow::openFile()
             pattern_name=open_le->text();
             save_le->setText(pattern_name);
             setTitle();
-            openFile(pattern_name);
-            //            patternFiller->update();
+            openFile(pattern_name);  
         }
         else
         {
@@ -696,8 +635,6 @@ void StimulatorMainWindow::openFile()
             for(int i=prot_N;i<prot_le_s;i++)
                 prot_le[i].setText("");
             updateProtocol();
-
-            ////
         }
     }
     else
@@ -705,7 +642,6 @@ void StimulatorMainWindow::openFile()
         QString message = tr("wrong file name");
         statusBar()->showMessage(message);
     }
-    //patternFiller->update();
     openWindow->hide();
 
     setTitle();
@@ -796,7 +732,6 @@ void StimulatorMainWindow::changeDim()
     main_dealloc(Nx,Ny);
     Nx=Nx_le->text().toInt();
     Ny=Ny_le->text().toInt();
-    //    main_alloc(Nx_le->text().toInt(),Ny_le->text().toInt());
     main_alloc(Nx,Ny);
     resize(vibro_x[Nx-1]+100,270+vibro_y[Ny-1]);
     patternFiller->update();
@@ -813,7 +748,6 @@ void StimulatorMainWindow::protocolRoutine()
         {
             prot_ind=0;
 
-            //        protPlayFlag=0;
             if(!prot_loop_ON)
             {
                 timer.stop();
@@ -840,7 +774,6 @@ void StimulatorMainWindow::protocolRoutine()
 void StimulatorMainWindow::newFile()
 {
     infoLabel->setText(tr("Invoked <b>File|New</b>"));
-
 }
 
 void StimulatorMainWindow::open()
@@ -850,75 +783,11 @@ void StimulatorMainWindow::open()
     else
         open_le->setText(pattern_name);
     openWindow->show();
-    //    infoLabel->setText(tr("Invoked <b>File|Open</b>"));
-
 }
 
 void StimulatorMainWindow::save11()
 {
     infoLabel->setText(tr("Invoked <b>File|Save</b>"));
-}
-
-
-
-void StimulatorMainWindow::print()
-{
-    infoLabel->setText(tr("Invoked <b>File|Print</b>"));
-}
-
-void StimulatorMainWindow::undo()
-{
-    infoLabel->setText(tr("Invoked <b>Edit|Undo</b>"));
-}
-
-void StimulatorMainWindow::redo()
-{
-    infoLabel->setText(tr("Invoked <b>Edit|Redo</b>"));
-}
-
-void StimulatorMainWindow::cut()
-{
-    infoLabel->setText(tr("Invoked <b>Edit|Cut</b>"));
-}
-
-void StimulatorMainWindow::copy()
-{
-    infoLabel->setText(tr("Invoked <b>Edit|Copy</b>"));
-}
-
-void StimulatorMainWindow::paste()
-{
-    infoLabel->setText(tr("Invoked <b>Edit|Paste</b>"));
-}
-
-void StimulatorMainWindow::bold()
-{
-    infoLabel->setText(tr("Invoked <b>Edit|Format|Bold</b>"));
-}
-
-void StimulatorMainWindow::italic()
-{
-    infoLabel->setText(tr("Invoked <b>Edit|Format|Italic</b>"));
-}
-
-void StimulatorMainWindow::leftAlign()
-{
-    infoLabel->setText(tr("Invoked <b>Edit|Format|Left Align</b>"));
-}
-
-void StimulatorMainWindow::rightAlign()
-{
-    infoLabel->setText(tr("<i>Invoked  </i><b>Edit|Format|Right Align</b>"));
-}
-
-void StimulatorMainWindow::justify()
-{
-    infoLabel->setText(tr("Invoked <b>Edit|Format|Justify</b>"));
-}
-
-void StimulatorMainWindow::center()
-{
-    infoLabel->setText(tr("Invoked <b>Edit|Format|Center</b>"));
 }
 
 void StimulatorMainWindow::setLineSpacing()
@@ -934,27 +803,21 @@ void StimulatorMainWindow::setParagraphSpacing()
 void StimulatorMainWindow::about()
 {
     infoLabel->setText(tr("Invoked <b>Help|About</b>"));
-    //    QMessageBox::about(this, tr("About Menu"),
-    //                       tr("This is a <b>Stimulator</b> program"
-    //                          "\nv1.1"));
     QMessageBox msb;
     msb.setWindowTitle("About");
-    msb.setText(tr("This is a Stimulator program v1.1 \n"
-                   "    Обратите внимание на подсказки внизу\n"
-                   "    Для соедининия с устройством в строке\n"
-                   "названий серийного порта нажмите ENTER\n"
-                   "    О состоянии подключения оповестит строка подсказок\n"
-                   "    Возможно сохранение как паттерна, так и протокола в отдельности\n"
-                   "в зависимости от запущенного режима\n"
-                   "    Значение PWM - целое число в пределах от 0 до 40,"
-                   "применяется для всего паттерна целиком"));
+    msb.setText(tr("This is a Stimulator program v1.1\n"
+                   "    Pay attention to the cues below\n"
+                   "    Press Enter in the line with the name of COM-port"
+                   "for connection with the device\n"
+                   "    Hint line will notify about connection state"
+                   "    It is possible to save both the pattern and"
+                   "protocol configuration separately depeding from the regime\n"
+                   "    PWM coefficient is an integer number in range from 0 to 40,"
+                   "is being accepted for an all actuators of a whole pattern"));
     msb.exec();
 }
 
-void StimulatorMainWindow::aboutQt()
-{
-    infoLabel->setText(tr("Invoked <b>Help|About Qt</b>"));
-}
+
 
 void StimulatorMainWindow::setMapping()
 {
@@ -1019,53 +882,6 @@ void StimulatorMainWindow::createActions()
     exitAct->setStatusTip(tr("Exit the application"));
     connect(exitAct, &QAction::triggered, this, &QWidget::close);
 
-    undoAct = new QAction(tr("&Undo"), this);
-    undoAct->setShortcuts(QKeySequence::Undo);
-    undoAct->setStatusTip(tr("Undo the last operation"));
-    connect(undoAct, &QAction::triggered, this, &StimulatorMainWindow::undo);
-
-    redoAct = new QAction(tr("&Redo"), this);
-    redoAct->setShortcuts(QKeySequence::Redo);
-    redoAct->setStatusTip(tr("Redo the last operation"));
-    connect(redoAct, &QAction::triggered, this, &StimulatorMainWindow::redo);
-
-    cutAct = new QAction(tr("Cu&t"), this);
-    cutAct->setShortcuts(QKeySequence::Cut);
-    cutAct->setStatusTip(tr("Cut the current selection's contents to the "
-                            "clipboard"));
-    connect(cutAct, &QAction::triggered, this, &StimulatorMainWindow::cut);
-
-    copyAct = new QAction(tr("&Copy"), this);
-    copyAct->setShortcuts(QKeySequence::Copy);
-    copyAct->setStatusTip(tr("Copy the current selection's contents to the "
-                             "clipboard"));
-    connect(copyAct, &QAction::triggered, this, &StimulatorMainWindow::copy);
-
-    pasteAct = new QAction(tr("&Paste"), this);
-    pasteAct->setShortcuts(QKeySequence::Paste);
-    pasteAct->setStatusTip(tr("Paste the clipboard's contents into the current "
-                              "selection"));
-    connect(pasteAct, &QAction::triggered, this, &StimulatorMainWindow::paste);
-
-    boldAct = new QAction(tr("&Bold"), this);
-    boldAct->setCheckable(true);
-    boldAct->setShortcut(QKeySequence::Bold);
-    boldAct->setStatusTip(tr("Make the text bold"));
-    connect(boldAct, &QAction::triggered, this, &StimulatorMainWindow::bold);
-
-    QFont boldFont = boldAct->font();
-    boldFont.setBold(true);
-    boldAct->setFont(boldFont);
-
-    italicAct = new QAction(tr("&Italic"), this);
-    italicAct->setCheckable(true);
-    italicAct->setShortcut(QKeySequence::Italic);
-    italicAct->setStatusTip(tr("Make the text italic"));
-    connect(italicAct, &QAction::triggered, this, &StimulatorMainWindow::italic);
-
-    QFont italicFont = italicAct->font();
-    italicFont.setItalic(true);
-    italicAct->setFont(italicFont);
 
     setLineSpacingAct = new QAction(tr("Set &Line Spacing..."), this);
     setLineSpacingAct->setStatusTip(tr("Change the gap between the lines of a "
@@ -1081,41 +897,7 @@ void StimulatorMainWindow::createActions()
     aboutAct->setStatusTip(tr("Show the application's About box"));
     connect(aboutAct, &QAction::triggered, this, &StimulatorMainWindow::about);
 
-    aboutQtAct = new QAction(tr("About &Qt"), this);
-    aboutQtAct->setStatusTip(tr("Show the Qt library's About box"));
-    connect(aboutQtAct, &QAction::triggered, qApp, &QApplication::aboutQt);
-    connect(aboutQtAct, &QAction::triggered, this, &StimulatorMainWindow::aboutQt);
-
-    leftAlignAct = new QAction(tr("&Left Align"), this);
-    leftAlignAct->setCheckable(true);
-    leftAlignAct->setShortcut(tr("Ctrl+L"));
-    leftAlignAct->setStatusTip(tr("Left align the selected text"));
-    connect(leftAlignAct, &QAction::triggered, this, &StimulatorMainWindow::leftAlign);
-
-    rightAlignAct = new QAction(tr("&Right Align"), this);
-    rightAlignAct->setCheckable(true);
-    rightAlignAct->setShortcut(tr("Ctrl+R"));
-    rightAlignAct->setStatusTip(tr("Right align the selected text"));
-    connect(rightAlignAct, &QAction::triggered, this, &StimulatorMainWindow::rightAlign);
-
-    justifyAct = new QAction(tr("&Justify"), this);
-    justifyAct->setCheckable(true);
-    justifyAct->setShortcut(tr("Ctrl+J"));
-    justifyAct->setStatusTip(tr("Justify the selected text"));
-    connect(justifyAct, &QAction::triggered, this, &StimulatorMainWindow::justify);
-
-    centerAct = new QAction(tr("&Center"), this);
-    centerAct->setCheckable(true);
-    centerAct->setShortcut(tr("Ctrl+E"));
-    centerAct->setStatusTip(tr("Center the selected text"));
-    connect(centerAct, &QAction::triggered, this, &StimulatorMainWindow::center);
-
     alignmentGroup = new QActionGroup(this);
-    alignmentGroup->addAction(leftAlignAct);
-    alignmentGroup->addAction(rightAlignAct);
-    alignmentGroup->addAction(justifyAct);
-    alignmentGroup->addAction(centerAct);
-    leftAlignAct->setChecked(true);
 }
 
 void StimulatorMainWindow::setLinearMapping()
@@ -1129,26 +911,19 @@ void StimulatorMainWindow::setConfigMapping()
     setMapping();
 }
 
-
-
 void StimulatorMainWindow::editorChecked()
 {
     if(mode==1)//change
     {
         mode=0;
         protAct->setChecked(false);
-        //        save_open_le->setText(pattern_name);
-        //        save_open_le->setText(pattern_name);
         patternFiller->update();
         stackedWidget->setCurrentIndex(0);
     }
     else
     {
         editorAct->setChecked(true);
-        //        save_open_le->setText(prot_name);
-        //        save_open_le->setText(prot_name);
     }
-    //patternFiller->update();
     setTitle();
 }
 
@@ -1158,15 +933,11 @@ void StimulatorMainWindow::protChecked()
     {
         mode=1;
         editorAct->setChecked(false);
-        //        save_open_le->setText(prot_name);
-        //        save_open_le->setText(prot_name);
         stackedWidget->setCurrentIndex(1);
     }
     else
     {
         protAct->setChecked(true);
-        //        save_open_le->setText(pattern_name);
-        //        save_open_le->setText(pattern_name);
     }
 
 
@@ -1179,7 +950,6 @@ void StimulatorMainWindow::setTitle()
     QString hm=mode?QString("protocol   "):QString("ptnEdit   ");
     QString hm2=mode?prot_name:pattern_name;
     setWindowTitle(QString("Stimulator->")+hm+hm2);
-    //    setWindowTitle(tr("<b>hello</b>"));
 }
 
 void StimulatorMainWindow::createMenus()
@@ -1229,7 +999,6 @@ void memory_dealloc(T** x)
 
 void main_alloc(int Nx, int Ny)
 {
-    //    memory_alloc<int>(&vibro_x,5000);
 
 
     memory_alloc<int>(&vib_from_s,Nx*Ny);
@@ -1262,20 +1031,8 @@ void main_alloc(int Nx, int Ny)
     for (int i=0;i<Ny;i++)
         vibro_y[i]=shift+vibro_step*i;
 
-    //////////////////
-    //manually
-
     for(int i=0;i<Nx*Ny;i++)
         vib_from_s[i]=i;
-    //    vib_from_s[0]=0;
-    //    vib_from_s[1]=2;
-    //    vib_from_s[2]=3;
-    //    vib_from_s[3]=1;
-    //    for(int i=0;i<4;i++)
-    //    {
-    //        s_from_vib[vib_from_s[i]]=i;
-    //    }
-
 }
 
 void main_dealloc(int Nx, int Ny)

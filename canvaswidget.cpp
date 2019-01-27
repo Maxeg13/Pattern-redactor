@@ -14,19 +14,12 @@ extern int checked_n;
 extern int *vibro_state;
 extern QLineEdit* PWM_le;
 
-canvasWidget::canvasWidget()
-{
-
-}
-
 
 
 void canvasWidget::paintEvent(QPaintEvent *event)
 {
     QPen pen;
 
-
-    //    pen.setStyle();
     QPainter* painter=new QPainter(this);
     painter->setRenderHint(QPainter::Antialiasing, true);
 
@@ -46,7 +39,6 @@ void canvasWidget::paintEvent(QPaintEvent *event)
                 }
                 else
                 {
-                    //                pen.setStyle(Qt::SolidLine);
                     pen.setColor(QColor(0,0,0));
                     pen.setWidth(2);
                     vibro_rad[checked_n]=vibro_rad_stat;

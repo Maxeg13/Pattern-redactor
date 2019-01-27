@@ -10,7 +10,6 @@ public:
 
     void mousePressEvent(QMouseEvent *event);
     void paintEvent(QPaintEvent *event) override;
-    canvasWidget();
 signals:
     clickedSignal( );
 };

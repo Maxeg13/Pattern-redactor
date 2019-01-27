@@ -59,12 +59,9 @@ UDP_Receiver::UDP_Receiver(QWidget *parent)
     : QWidget(parent)
 {
 
-    //! [0]
     udpSocket = new QUdpSocket(this);
     udpSocket->bind(6221, QUdpSocket::ShareAddress);
-    //! [0]
 
-    //! [1]
     connect(udpSocket, SIGNAL(readyRead()),
             this, SLOT(processPendingDatagrams()));
 
@@ -81,11 +78,6 @@ void UDP_Receiver::processPendingDatagrams()
         QByteArray datagram;
         datagram.resize(udpSocket->pendingDatagramSize());
         udpSocket->readDatagram(datagram.data(), datagram.size());
-        //        statusLabel->setText(tr("Received datagram: \"%1\"")
-        //                             .arg(datagram.data()));
-
-
-
 
         for(int i=0;i<datagram.size();i++)
         {
